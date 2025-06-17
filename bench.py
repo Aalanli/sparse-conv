@@ -23,6 +23,9 @@ except ImportError:
     SPConv3d = None
 
 
+import ops.conv3d_implicit_gemm
+import ops.idx_gen
+
 def generate_random_coords(N, max_coord=50, batch_size=2, device='cuda'):
     # batch indices [0, batch_size)
     batch = torch.randint(0, batch_size, (N, 1), device=device)
@@ -69,6 +72,25 @@ class SpconvSubM(ImplBase):
         sp_t = SparseConvTensor(feats, coords.int(), spatial_shape=spatial_range[1:], batch_size=spatial_range[0])
         out = self.layer(sp_t)
         return out.features
+
+class Conv3DSubmAot(ImplBase):
+    name = 'conv3d_subm_aot'
+
+    def __init__(self, in_channels, out_channels, kernel_size=3):
+        self.weight = torch.nn.Parameter(
+            torch.randn(kernel_size**3, in_channels, out_channels, device='cuda', dtype=torch.float16)
+        )
+        self.kernel_size = kernel_size
+        self.num_kernels = ops.conv3d_implicit_gemm.num_kernels()       
+
+    def forward(self, feats, coords, spatial_range):
+        # coords: [N, 4] where last dimension is (x, y, z, batch_id)
+        # feats: [N, D]
+        indices = ops.idx_gen.gen_conv3d_subm_indices(coords, self.kernel_size)
+        return ops.conv3d_implicit_gemm.conv3d_implicit_gemm(
+            feats, indices, self.weight, self.kernel_size, self.num_kernels - 1
+        )
+
 
 import ops.idx_gen
 from triton_spconv import Conv3DSubmModule
@@ -160,7 +182,7 @@ def main():
     args = parser.parse_args()
 
     # list of implementations
-    implementations = [SpconvSubM, TorchsparseSubM]
+    implementations = [SpconvSubM, TorchsparseSubM, Conv3DSubmAot]
 
     all_results = {}
     for impl in implementations:
