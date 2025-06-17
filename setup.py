@@ -7,10 +7,11 @@ setup(
     ext_modules=[
         CUDAExtension(
             name='ops',
-            sources=glob.glob('ops/*.cu') + glob.glob('ops/*.cpp'), 
+            sources=glob.glob('ops/*.cu') + glob.glob('ops/*.cpp') + glob.glob('ops/*.cc'), 
             extra_compile_args={
                 'nvcc': ['-lineinfo'],
             },
+            extra_link_args=['-lcuda']
         )
     ],
     cmdclass={

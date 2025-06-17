@@ -1,3 +1,4 @@
+# %%
 import time
 import ops
 import argparse
@@ -101,7 +102,7 @@ class NaiveConv3D(ImplBase):
 
 
 
-def benchmark_impl(impl_cls: ImplBase, Ns, Ds, warmup=10, runs=50, device='cuda', dtype=torch.float16):
+def benchmark_impl(impl_cls: type[ImplBase], Ns, Ds, warmup=10, runs=50, device='cuda', dtype=torch.float16):
     results = {D: [] for D in Ds}
     batch = 1
     max_coord = 1024
@@ -159,7 +160,7 @@ def main():
     args = parser.parse_args()
 
     # list of implementations
-    implementations = [NaiveConv3D, SpconvSubM, TorchsparseSubM]
+    implementations = [SpconvSubM, TorchsparseSubM]
 
     all_results = {}
     for impl in implementations:
@@ -172,8 +173,26 @@ def main():
         warmup=args.warmup, runs=args.runs
     )
 
-    plot_results(all_results, args.Ns, args.Ds)
+    plot_results(all_results, args.Ns, args.Ds, out_file='benchmark.png')
 
 
 if __name__ == '__main__':
     main()
+
+# benchmark_impl(ImplicitGemm, [1000, 5000, 10000, 50000, 100000, 200000, 300000, 400000], [16, 32, 64, 128], 10, 50)
+
+# from triton_spconv import implicit_conv3d_kernel
+
+# # cache = implicit_conv3d_kernel.fn.device_caches[0]
+# # sigs = list(cache[0].items())
+# # print(sigs[0])
+
+# configs = implicit_conv3d_kernel.cache
+# for c, sig in configs.items():
+#     print(f"Config: {c}")
+#     print(f"Signature: {sig}")
+
+# # %%
+# s = set([str(b) for b in implicit_conv3d_kernel.cache.values()])
+# for i in s:
+#     print(i)

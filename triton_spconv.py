@@ -15,31 +15,16 @@ def or_combine(a, b):
 
 @triton.autotune(
     configs=[
-        triton.Config({"BLOCK_N": 16, "BLOCK_K": 16, "BLOCK_Dp": 16}, num_warps=2, num_stages=2),
-        triton.Config({'BLOCK_N': 32, 'BLOCK_K': 16, 'BLOCK_Dp': 16}, num_warps=2, num_stages=2),
-        triton.Config({'BLOCK_N': 32, 'BLOCK_K': 32, 'BLOCK_Dp': 16}, num_warps=2, num_stages=2),
-        triton.Config({'BLOCK_N': 32, 'BLOCK_K': 16, 'BLOCK_Dp': 32}, num_warps=2, num_stages=2),
-        triton.Config({'BLOCK_N': 64, 'BLOCK_K': 32, 'BLOCK_Dp': 32}, num_warps=4, num_stages=2),
-        triton.Config({'BLOCK_N': 64, 'BLOCK_K': 16, 'BLOCK_Dp': 32}, num_warps=4, num_stages=2),
-        triton.Config({'BLOCK_N': 64, 'BLOCK_K': 32, 'BLOCK_Dp': 16}, num_warps=4, num_stages=2),
-        triton.Config({'BLOCK_N': 128, 'BLOCK_K': 32, 'BLOCK_Dp': 32}, num_warps=4, num_stages=2),
-
-        triton.Config({"BLOCK_N": 16, "BLOCK_K": 16, "BLOCK_Dp": 16}, num_warps=2, num_stages=3),
-        triton.Config({'BLOCK_N': 32, 'BLOCK_K': 16, 'BLOCK_Dp': 16}, num_warps=2, num_stages=3),
-        triton.Config({'BLOCK_N': 32, 'BLOCK_K': 32, 'BLOCK_Dp': 16}, num_warps=2, num_stages=3),
-        triton.Config({'BLOCK_N': 32, 'BLOCK_K': 16, 'BLOCK_Dp': 32}, num_warps=2, num_stages=3),
-        triton.Config({'BLOCK_N': 64, 'BLOCK_K': 32, 'BLOCK_Dp': 32}, num_warps=4, num_stages=3),
-        triton.Config({'BLOCK_N': 64, 'BLOCK_K': 16, 'BLOCK_Dp': 32}, num_warps=4, num_stages=3),
-        triton.Config({'BLOCK_N': 64, 'BLOCK_K': 32, 'BLOCK_Dp': 16}, num_warps=4, num_stages=3),
-        triton.Config({'BLOCK_N': 128, 'BLOCK_K': 32, 'BLOCK_Dp': 32}, num_warps=4, num_stages=3),
-
-        triton.Config({"BLOCK_N": 16, "BLOCK_K": 32, "BLOCK_Dp": 32}, num_warps=2, num_stages=2),
-        triton.Config({"BLOCK_N": 16, "BLOCK_K": 32, "BLOCK_Dp": 32}, num_warps=2, num_stages=3),
-        triton.Config({"BLOCK_N": 16, "BLOCK_K": 32, "BLOCK_Dp": 64}, num_warps=4, num_stages=3),
-        triton.Config({"BLOCK_N": 16, "BLOCK_K": 64, "BLOCK_Dp": 64}, num_warps=4, num_stages=3),
+        # good for float16
+        triton.Config({"BLOCK_N": 32, "BLOCK_K": 16, "BLOCK_Dp": 16},  num_warps=2, num_stages=2),
+        triton.Config({"BLOCK_N": 16, "BLOCK_K": 16, "BLOCK_Dp": 16},  num_warps=2, num_stages=2),
+        triton.Config({"BLOCK_N": 16, "BLOCK_K": 32, "BLOCK_Dp": 64},  num_warps=4, num_stages=3),
+        triton.Config({"BLOCK_N": 32, "BLOCK_K": 32, "BLOCK_Dp": 16},  num_warps=2, num_stages=2),
         triton.Config({"BLOCK_N": 16, "BLOCK_K": 32, "BLOCK_Dp": 128}, num_warps=8, num_stages=3),
-        triton.Config({"BLOCK_N": 16, "BLOCK_K": 32, "BLOCK_Dp": 128}, num_warps=8, num_stages=3),
-
+        triton.Config({"BLOCK_N": 128, "BLOCK_K": 32, "BLOCK_Dp": 32}, num_warps=4, num_stages=2),
+        triton.Config({"BLOCK_N": 16, "BLOCK_K": 64, "BLOCK_Dp": 64},  num_warps=4, num_stages=3),
+        triton.Config({"BLOCK_N": 16, "BLOCK_K": 32, "BLOCK_Dp": 32},  num_warps=2, num_stages=2),
+        triton.Config({"BLOCK_N": 32, "BLOCK_K": 16, "BLOCK_Dp": 32},  num_warps=2, num_stages=2),
     ],
     key=["N", "N_prime", "K", "D", "D_prime"],
 )
@@ -51,9 +36,9 @@ def implicit_conv3d_kernel(
     output,  # [N', D']
     N,
     N_prime,
-    K: tl.constexpr,
-    D: tl.constexpr,
-    D_prime: tl.constexpr,
+    D,
+    D_prime,
+    K,
     BLOCK_N: tl.constexpr,  # tile size for N
     BLOCK_K: tl.constexpr,  # tile size for K
     BLOCK_Dp: tl.constexpr,  # tile size for D
@@ -74,7 +59,7 @@ def implicit_conv3d_kernel(
         # [BLOCK_N]
         inds = tl.load(ind_ptr, mask=(tl.arange(0, BLOCK_N) + pid_n * BLOCK_N) < N_prime, other=-1)
         # tl.device_print("inds", inds)
-        if tl.reduce(inds != -1, 0, or_combine):
+        if tl.reduce((0 <= inds) & (inds < N), 0, or_combine):
             for ki in range(tl.cdiv(D, BLOCK_K)):
                 offset_k = k * D + ki * BLOCK_K
 
@@ -107,7 +92,7 @@ def implicit_conv3d_kernel(
     tl.store(out_ptr, acc.to(out_ptr.dtype.element_ty), out_mask)
 
 
-def conv3d_subm(feats: torch.Tensor, indices: torch.Tensor, weights: torch.Tensor, kernel_size: int):
+def conv3d_implicit_gemm(feats: torch.Tensor, indices: torch.Tensor, weights: torch.Tensor, kernel_size: int):
     N, D = feats.shape
     N_prime, K3 = indices.shape
     out = torch.zeros((N_prime, weights.shape[2]), device=feats.device, dtype=feats.dtype)
@@ -119,9 +104,9 @@ def conv3d_subm(feats: torch.Tensor, indices: torch.Tensor, weights: torch.Tenso
         out,  # [N', D']
         N,
         N_prime,
-        kernel_size,
         D,
         weights.shape[2],
+        kernel_size,
         acc_dtype=tl.float32,
     )
     return out
@@ -144,7 +129,7 @@ def compare_conv3d_subm():
     indices[:, 27 // 2] = torch.arange(10, device="cuda", dtype=torch.int32)
     print(indices)
 
-    out_triton = conv3d_subm(feats, indices, weights, kernel_size)
+    out_triton = conv3d_implicit_gemm(feats, indices, weights, kernel_size)
     out_ref = reference_conv3d_subm(feats, indices, weights, kernel_size)
 
     print((out_triton - out_ref).abs().max())
@@ -169,8 +154,6 @@ class Conv3DSubmModule(torch.nn.Module):
         indices = ops.idx_gen.gen_conv3d_subm_indices(coords, self.kernel_size)
 
         # indices: [batch_size, kernel_size**3]
-        out = conv3d_subm(feats, indices, self.weight, self.kernel_size)
+        out = conv3d_implicit_gemm(feats, indices, self.weight, self.kernel_size)
         return out
-    
-
 

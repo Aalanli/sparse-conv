@@ -1,0 +1,1757 @@
+{
+    "Config(block_sizes={'BLOCK_N': 32, 'BLOCK_K': 16, 'BLOCK_Dp': 16}, num_warps=2, num_stages=2, div_k=False, div_d=True, div_dp=True, dtype='fp16', sm=89).ptx": {
+        "config": {
+            "block_sizes": {
+                "BLOCK_N": 32,
+                "BLOCK_K": 16,
+                "BLOCK_Dp": 16
+            },
+            "num_warps": 2,
+            "num_stages": 2,
+            "div_k": false,
+            "div_d": true,
+            "div_dp": true,
+            "dtype": "fp16",
+            "sm": 89
+        },
+        "meta": {
+            "allowed_dot_input_precisions": [
+                "tf32",
+                "tf32x3",
+                "ieee"
+            ],
+            "arch": "sm89",
+            "backend_name": "cuda",
+            "cluster_dims": [
+                1,
+                1,
+                1
+            ],
+            "debug": false,
+            "default_dot_input_precision": "tf32",
+            "deprecated_fp8_dtypes": [],
+            "enable_fp_fusion": true,
+            "extern_libs": [
+                [
+                    "libdevice",
+                    "/home/waabi-user/.local/lib/python3.10/site-packages/triton/backends/nvidia/lib/libdevice.10.bc"
+                ]
+            ],
+            "global_scratch_align": 1,
+            "global_scratch_size": 0,
+            "hash": "24aa448a51704f6f22c607d9414e15d96e6eee149a6566faf312e5e8ef18e6df",
+            "launch_cooperative_grid": false,
+            "max_num_imprecise_acc_default": 0,
+            "maxnreg": null,
+            "name": "implicit_conv3d_kernel",
+            "num_buffers_warp_spec": 0,
+            "num_consumer_groups": 0,
+            "num_ctas": 1,
+            "num_stages": 2,
+            "num_warps": 2,
+            "ptx_version": null,
+            "reg_dec_producer": 0,
+            "reg_inc_consumer": 0,
+            "sanitize_overflow": true,
+            "shared": 1536,
+            "supported_fp8_dtypes": [
+                "fp8e4b15",
+                "fp8e4nv",
+                "fp8e5"
+            ],
+            "target": null,
+            "tmem_size": 0,
+            "triton_version": "3.3.1"
+        }
+    },
+    "Config(block_sizes={'BLOCK_N': 16, 'BLOCK_K': 16, 'BLOCK_Dp': 16}, num_warps=2, num_stages=2, div_k=False, div_d=True, div_dp=True, dtype='fp16', sm=89).ptx": {
+        "config": {
+            "block_sizes": {
+                "BLOCK_N": 16,
+                "BLOCK_K": 16,
+                "BLOCK_Dp": 16
+            },
+            "num_warps": 2,
+            "num_stages": 2,
+            "div_k": false,
+            "div_d": true,
+            "div_dp": true,
+            "dtype": "fp16",
+            "sm": 89
+        },
+        "meta": {
+            "allowed_dot_input_precisions": [
+                "tf32",
+                "tf32x3",
+                "ieee"
+            ],
+            "arch": "sm89",
+            "backend_name": "cuda",
+            "cluster_dims": [
+                1,
+                1,
+                1
+            ],
+            "debug": false,
+            "default_dot_input_precision": "tf32",
+            "deprecated_fp8_dtypes": [],
+            "enable_fp_fusion": true,
+            "extern_libs": [
+                [
+                    "libdevice",
+                    "/home/waabi-user/.local/lib/python3.10/site-packages/triton/backends/nvidia/lib/libdevice.10.bc"
+                ]
+            ],
+            "global_scratch_align": 1,
+            "global_scratch_size": 0,
+            "hash": "f1ad6f199ea2f013eb48bcacd809e2f52f301b004233c648d24be673a9a657f4",
+            "launch_cooperative_grid": false,
+            "max_num_imprecise_acc_default": 0,
+            "maxnreg": null,
+            "name": "implicit_conv3d_kernel",
+            "num_buffers_warp_spec": 0,
+            "num_consumer_groups": 0,
+            "num_ctas": 1,
+            "num_stages": 2,
+            "num_warps": 2,
+            "ptx_version": null,
+            "reg_dec_producer": 0,
+            "reg_inc_consumer": 0,
+            "sanitize_overflow": true,
+            "shared": 1024,
+            "supported_fp8_dtypes": [
+                "fp8e4b15",
+                "fp8e4nv",
+                "fp8e5"
+            ],
+            "target": null,
+            "tmem_size": 0,
+            "triton_version": "3.3.1"
+        }
+    },
+    "Config(block_sizes={'BLOCK_N': 16, 'BLOCK_K': 32, 'BLOCK_Dp': 64}, num_warps=4, num_stages=3, div_k=False, div_d=True, div_dp=True, dtype='fp16', sm=89).ptx": {
+        "config": {
+            "block_sizes": {
+                "BLOCK_N": 16,
+                "BLOCK_K": 32,
+                "BLOCK_Dp": 64
+            },
+            "num_warps": 4,
+            "num_stages": 3,
+            "div_k": false,
+            "div_d": true,
+            "div_dp": true,
+            "dtype": "fp16",
+            "sm": 89
+        },
+        "meta": {
+            "allowed_dot_input_precisions": [
+                "tf32",
+                "tf32x3",
+                "ieee"
+            ],
+            "arch": "sm89",
+            "backend_name": "cuda",
+            "cluster_dims": [
+                1,
+                1,
+                1
+            ],
+            "debug": false,
+            "default_dot_input_precision": "tf32",
+            "deprecated_fp8_dtypes": [],
+            "enable_fp_fusion": true,
+            "extern_libs": [
+                [
+                    "libdevice",
+                    "/home/waabi-user/.local/lib/python3.10/site-packages/triton/backends/nvidia/lib/libdevice.10.bc"
+                ]
+            ],
+            "global_scratch_align": 1,
+            "global_scratch_size": 0,
+            "hash": "bd9f09a93a686131f3b618c757f9e7fe25dd86a04824e233819ed0bdc3622399",
+            "launch_cooperative_grid": false,
+            "max_num_imprecise_acc_default": 0,
+            "maxnreg": null,
+            "name": "implicit_conv3d_kernel",
+            "num_buffers_warp_spec": 0,
+            "num_consumer_groups": 0,
+            "num_ctas": 1,
+            "num_stages": 3,
+            "num_warps": 4,
+            "ptx_version": null,
+            "reg_dec_producer": 0,
+            "reg_inc_consumer": 0,
+            "sanitize_overflow": true,
+            "shared": 10240,
+            "supported_fp8_dtypes": [
+                "fp8e4b15",
+                "fp8e4nv",
+                "fp8e5"
+            ],
+            "target": null,
+            "tmem_size": 0,
+            "triton_version": "3.3.1"
+        }
+    },
+    "Config(block_sizes={'BLOCK_N': 32, 'BLOCK_K': 32, 'BLOCK_Dp': 16}, num_warps=2, num_stages=2, div_k=False, div_d=True, div_dp=True, dtype='fp16', sm=89).ptx": {
+        "config": {
+            "block_sizes": {
+                "BLOCK_N": 32,
+                "BLOCK_K": 32,
+                "BLOCK_Dp": 16
+            },
+            "num_warps": 2,
+            "num_stages": 2,
+            "div_k": false,
+            "div_d": true,
+            "div_dp": true,
+            "dtype": "fp16",
+            "sm": 89
+        },
+        "meta": {
+            "allowed_dot_input_precisions": [
+                "tf32",
+                "tf32x3",
+                "ieee"
+            ],
+            "arch": "sm89",
+            "backend_name": "cuda",
+            "cluster_dims": [
+                1,
+                1,
+                1
+            ],
+            "debug": false,
+            "default_dot_input_precision": "tf32",
+            "deprecated_fp8_dtypes": [],
+            "enable_fp_fusion": true,
+            "extern_libs": [
+                [
+                    "libdevice",
+                    "/home/waabi-user/.local/lib/python3.10/site-packages/triton/backends/nvidia/lib/libdevice.10.bc"
+                ]
+            ],
+            "global_scratch_align": 1,
+            "global_scratch_size": 0,
+            "hash": "cb7ee2214902f22920a7c068e497262959089eb6c35590b893be7cfcd6f6b7db",
+            "launch_cooperative_grid": false,
+            "max_num_imprecise_acc_default": 0,
+            "maxnreg": null,
+            "name": "implicit_conv3d_kernel",
+            "num_buffers_warp_spec": 0,
+            "num_consumer_groups": 0,
+            "num_ctas": 1,
+            "num_stages": 2,
+            "num_warps": 2,
+            "ptx_version": null,
+            "reg_dec_producer": 0,
+            "reg_inc_consumer": 0,
+            "sanitize_overflow": true,
+            "shared": 3072,
+            "supported_fp8_dtypes": [
+                "fp8e4b15",
+                "fp8e4nv",
+                "fp8e5"
+            ],
+            "target": null,
+            "tmem_size": 0,
+            "triton_version": "3.3.1"
+        }
+    },
+    "Config(block_sizes={'BLOCK_N': 16, 'BLOCK_K': 32, 'BLOCK_Dp': 128}, num_warps=8, num_stages=3, div_k=False, div_d=True, div_dp=True, dtype='fp16', sm=89).ptx": {
+        "config": {
+            "block_sizes": {
+                "BLOCK_N": 16,
+                "BLOCK_K": 32,
+                "BLOCK_Dp": 128
+            },
+            "num_warps": 8,
+            "num_stages": 3,
+            "div_k": false,
+            "div_d": true,
+            "div_dp": true,
+            "dtype": "fp16",
+            "sm": 89
+        },
+        "meta": {
+            "allowed_dot_input_precisions": [
+                "tf32",
+                "tf32x3",
+                "ieee"
+            ],
+            "arch": "sm89",
+            "backend_name": "cuda",
+            "cluster_dims": [
+                1,
+                1,
+                1
+            ],
+            "debug": false,
+            "default_dot_input_precision": "tf32",
+            "deprecated_fp8_dtypes": [],
+            "enable_fp_fusion": true,
+            "extern_libs": [
+                [
+                    "libdevice",
+                    "/home/waabi-user/.local/lib/python3.10/site-packages/triton/backends/nvidia/lib/libdevice.10.bc"
+                ]
+            ],
+            "global_scratch_align": 1,
+            "global_scratch_size": 0,
+            "hash": "302b70f46901030bdc65ef4b83f7a07862f85705e142a7a5d02cc79e09871d13",
+            "launch_cooperative_grid": false,
+            "max_num_imprecise_acc_default": 0,
+            "maxnreg": null,
+            "name": "implicit_conv3d_kernel",
+            "num_buffers_warp_spec": 0,
+            "num_consumer_groups": 0,
+            "num_ctas": 1,
+            "num_stages": 3,
+            "num_warps": 8,
+            "ptx_version": null,
+            "reg_dec_producer": 0,
+            "reg_inc_consumer": 0,
+            "sanitize_overflow": true,
+            "shared": 18432,
+            "supported_fp8_dtypes": [
+                "fp8e4b15",
+                "fp8e4nv",
+                "fp8e5"
+            ],
+            "target": null,
+            "tmem_size": 0,
+            "triton_version": "3.3.1"
+        }
+    },
+    "Config(block_sizes={'BLOCK_N': 128, 'BLOCK_K': 32, 'BLOCK_Dp': 32}, num_warps=4, num_stages=2, div_k=False, div_d=True, div_dp=True, dtype='fp16', sm=89).ptx": {
+        "config": {
+            "block_sizes": {
+                "BLOCK_N": 128,
+                "BLOCK_K": 32,
+                "BLOCK_Dp": 32
+            },
+            "num_warps": 4,
+            "num_stages": 2,
+            "div_k": false,
+            "div_d": true,
+            "div_dp": true,
+            "dtype": "fp16",
+            "sm": 89
+        },
+        "meta": {
+            "allowed_dot_input_precisions": [
+                "tf32",
+                "tf32x3",
+                "ieee"
+            ],
+            "arch": "sm89",
+            "backend_name": "cuda",
+            "cluster_dims": [
+                1,
+                1,
+                1
+            ],
+            "debug": false,
+            "default_dot_input_precision": "tf32",
+            "deprecated_fp8_dtypes": [],
+            "enable_fp_fusion": true,
+            "extern_libs": [
+                [
+                    "libdevice",
+                    "/home/waabi-user/.local/lib/python3.10/site-packages/triton/backends/nvidia/lib/libdevice.10.bc"
+                ]
+            ],
+            "global_scratch_align": 1,
+            "global_scratch_size": 0,
+            "hash": "bbcc535c67d8e6756035ef89809ff57ccc598903c72b41463d8b277a88fcbc19",
+            "launch_cooperative_grid": false,
+            "max_num_imprecise_acc_default": 0,
+            "maxnreg": null,
+            "name": "implicit_conv3d_kernel",
+            "num_buffers_warp_spec": 0,
+            "num_consumer_groups": 0,
+            "num_ctas": 1,
+            "num_stages": 2,
+            "num_warps": 4,
+            "ptx_version": null,
+            "reg_dec_producer": 0,
+            "reg_inc_consumer": 0,
+            "sanitize_overflow": true,
+            "shared": 10240,
+            "supported_fp8_dtypes": [
+                "fp8e4b15",
+                "fp8e4nv",
+                "fp8e5"
+            ],
+            "target": null,
+            "tmem_size": 0,
+            "triton_version": "3.3.1"
+        }
+    },
+    "Config(block_sizes={'BLOCK_N': 16, 'BLOCK_K': 64, 'BLOCK_Dp': 64}, num_warps=4, num_stages=3, div_k=False, div_d=True, div_dp=True, dtype='fp16', sm=89).ptx": {
+        "config": {
+            "block_sizes": {
+                "BLOCK_N": 16,
+                "BLOCK_K": 64,
+                "BLOCK_Dp": 64
+            },
+            "num_warps": 4,
+            "num_stages": 3,
+            "div_k": false,
+            "div_d": true,
+            "div_dp": true,
+            "dtype": "fp16",
+            "sm": 89
+        },
+        "meta": {
+            "allowed_dot_input_precisions": [
+                "tf32",
+                "tf32x3",
+                "ieee"
+            ],
+            "arch": "sm89",
+            "backend_name": "cuda",
+            "cluster_dims": [
+                1,
+                1,
+                1
+            ],
+            "debug": false,
+            "default_dot_input_precision": "tf32",
+            "deprecated_fp8_dtypes": [],
+            "enable_fp_fusion": true,
+            "extern_libs": [
+                [
+                    "libdevice",
+                    "/home/waabi-user/.local/lib/python3.10/site-packages/triton/backends/nvidia/lib/libdevice.10.bc"
+                ]
+            ],
+            "global_scratch_align": 1,
+            "global_scratch_size": 0,
+            "hash": "c46168cd8d7605eb0e8b4d3ac1b575b9d82c55deafc3a28bbd6235c4e445fd92",
+            "launch_cooperative_grid": false,
+            "max_num_imprecise_acc_default": 0,
+            "maxnreg": null,
+            "name": "implicit_conv3d_kernel",
+            "num_buffers_warp_spec": 0,
+            "num_consumer_groups": 0,
+            "num_ctas": 1,
+            "num_stages": 3,
+            "num_warps": 4,
+            "ptx_version": null,
+            "reg_dec_producer": 0,
+            "reg_inc_consumer": 0,
+            "sanitize_overflow": true,
+            "shared": 20480,
+            "supported_fp8_dtypes": [
+                "fp8e4b15",
+                "fp8e4nv",
+                "fp8e5"
+            ],
+            "target": null,
+            "tmem_size": 0,
+            "triton_version": "3.3.1"
+        }
+    },
+    "Config(block_sizes={'BLOCK_N': 16, 'BLOCK_K': 32, 'BLOCK_Dp': 32}, num_warps=2, num_stages=2, div_k=False, div_d=True, div_dp=True, dtype='fp16', sm=89).ptx": {
+        "config": {
+            "block_sizes": {
+                "BLOCK_N": 16,
+                "BLOCK_K": 32,
+                "BLOCK_Dp": 32
+            },
+            "num_warps": 2,
+            "num_stages": 2,
+            "div_k": false,
+            "div_d": true,
+            "div_dp": true,
+            "dtype": "fp16",
+            "sm": 89
+        },
+        "meta": {
+            "allowed_dot_input_precisions": [
+                "tf32",
+                "tf32x3",
+                "ieee"
+            ],
+            "arch": "sm89",
+            "backend_name": "cuda",
+            "cluster_dims": [
+                1,
+                1,
+                1
+            ],
+            "debug": false,
+            "default_dot_input_precision": "tf32",
+            "deprecated_fp8_dtypes": [],
+            "enable_fp_fusion": true,
+            "extern_libs": [
+                [
+                    "libdevice",
+                    "/home/waabi-user/.local/lib/python3.10/site-packages/triton/backends/nvidia/lib/libdevice.10.bc"
+                ]
+            ],
+            "global_scratch_align": 1,
+            "global_scratch_size": 0,
+            "hash": "5045428200f7b740b318286d73e6c33e19de00230d8e41f2b76f7331e8490736",
+            "launch_cooperative_grid": false,
+            "max_num_imprecise_acc_default": 0,
+            "maxnreg": null,
+            "name": "implicit_conv3d_kernel",
+            "num_buffers_warp_spec": 0,
+            "num_consumer_groups": 0,
+            "num_ctas": 1,
+            "num_stages": 2,
+            "num_warps": 2,
+            "ptx_version": null,
+            "reg_dec_producer": 0,
+            "reg_inc_consumer": 0,
+            "sanitize_overflow": true,
+            "shared": 3072,
+            "supported_fp8_dtypes": [
+                "fp8e4b15",
+                "fp8e4nv",
+                "fp8e5"
+            ],
+            "target": null,
+            "tmem_size": 0,
+            "triton_version": "3.3.1"
+        }
+    },
+    "Config(block_sizes={'BLOCK_N': 32, 'BLOCK_K': 16, 'BLOCK_Dp': 32}, num_warps=2, num_stages=2, div_k=False, div_d=True, div_dp=True, dtype='fp16', sm=89).ptx": {
+        "config": {
+            "block_sizes": {
+                "BLOCK_N": 32,
+                "BLOCK_K": 16,
+                "BLOCK_Dp": 32
+            },
+            "num_warps": 2,
+            "num_stages": 2,
+            "div_k": false,
+            "div_d": true,
+            "div_dp": true,
+            "dtype": "fp16",
+            "sm": 89
+        },
+        "meta": {
+            "allowed_dot_input_precisions": [
+                "tf32",
+                "tf32x3",
+                "ieee"
+            ],
+            "arch": "sm89",
+            "backend_name": "cuda",
+            "cluster_dims": [
+                1,
+                1,
+                1
+            ],
+            "debug": false,
+            "default_dot_input_precision": "tf32",
+            "deprecated_fp8_dtypes": [],
+            "enable_fp_fusion": true,
+            "extern_libs": [
+                [
+                    "libdevice",
+                    "/home/waabi-user/.local/lib/python3.10/site-packages/triton/backends/nvidia/lib/libdevice.10.bc"
+                ]
+            ],
+            "global_scratch_align": 1,
+            "global_scratch_size": 0,
+            "hash": "c2d56b4fbe31c90531340534384917b2a014ce1275370d36ab6e7d1c4be39f1b",
+            "launch_cooperative_grid": false,
+            "max_num_imprecise_acc_default": 0,
+            "maxnreg": null,
+            "name": "implicit_conv3d_kernel",
+            "num_buffers_warp_spec": 0,
+            "num_consumer_groups": 0,
+            "num_ctas": 1,
+            "num_stages": 2,
+            "num_warps": 2,
+            "ptx_version": null,
+            "reg_dec_producer": 0,
+            "reg_inc_consumer": 0,
+            "sanitize_overflow": true,
+            "shared": 2048,
+            "supported_fp8_dtypes": [
+                "fp8e4b15",
+                "fp8e4nv",
+                "fp8e5"
+            ],
+            "target": null,
+            "tmem_size": 0,
+            "triton_version": "3.3.1"
+        }
+    },
+    "Config(block_sizes={'BLOCK_N': 32, 'BLOCK_K': 16, 'BLOCK_Dp': 16}, num_warps=2, num_stages=2, div_k=False, div_d=False, div_dp=True, dtype='fp16', sm=89).ptx": {
+        "config": {
+            "block_sizes": {
+                "BLOCK_N": 32,
+                "BLOCK_K": 16,
+                "BLOCK_Dp": 16
+            },
+            "num_warps": 2,
+            "num_stages": 2,
+            "div_k": false,
+            "div_d": false,
+            "div_dp": true,
+            "dtype": "fp16",
+            "sm": 89
+        },
+        "meta": {
+            "allowed_dot_input_precisions": [
+                "tf32",
+                "tf32x3",
+                "ieee"
+            ],
+            "arch": "sm89",
+            "backend_name": "cuda",
+            "cluster_dims": [
+                1,
+                1,
+                1
+            ],
+            "debug": false,
+            "default_dot_input_precision": "tf32",
+            "deprecated_fp8_dtypes": [],
+            "enable_fp_fusion": true,
+            "extern_libs": [
+                [
+                    "libdevice",
+                    "/home/waabi-user/.local/lib/python3.10/site-packages/triton/backends/nvidia/lib/libdevice.10.bc"
+                ]
+            ],
+            "global_scratch_align": 1,
+            "global_scratch_size": 0,
+            "hash": "128e26af400ae03cb161a4a26707104778bb70285c19169ae17c17418d5a227e",
+            "launch_cooperative_grid": false,
+            "max_num_imprecise_acc_default": 0,
+            "maxnreg": null,
+            "name": "implicit_conv3d_kernel",
+            "num_buffers_warp_spec": 0,
+            "num_consumer_groups": 0,
+            "num_ctas": 1,
+            "num_stages": 2,
+            "num_warps": 2,
+            "ptx_version": null,
+            "reg_dec_producer": 0,
+            "reg_inc_consumer": 0,
+            "sanitize_overflow": true,
+            "shared": 1536,
+            "supported_fp8_dtypes": [
+                "fp8e4b15",
+                "fp8e4nv",
+                "fp8e5"
+            ],
+            "target": null,
+            "tmem_size": 0,
+            "triton_version": "3.3.1"
+        }
+    },
+    "Config(block_sizes={'BLOCK_N': 16, 'BLOCK_K': 16, 'BLOCK_Dp': 16}, num_warps=2, num_stages=2, div_k=False, div_d=False, div_dp=True, dtype='fp16', sm=89).ptx": {
+        "config": {
+            "block_sizes": {
+                "BLOCK_N": 16,
+                "BLOCK_K": 16,
+                "BLOCK_Dp": 16
+            },
+            "num_warps": 2,
+            "num_stages": 2,
+            "div_k": false,
+            "div_d": false,
+            "div_dp": true,
+            "dtype": "fp16",
+            "sm": 89
+        },
+        "meta": {
+            "allowed_dot_input_precisions": [
+                "tf32",
+                "tf32x3",
+                "ieee"
+            ],
+            "arch": "sm89",
+            "backend_name": "cuda",
+            "cluster_dims": [
+                1,
+                1,
+                1
+            ],
+            "debug": false,
+            "default_dot_input_precision": "tf32",
+            "deprecated_fp8_dtypes": [],
+            "enable_fp_fusion": true,
+            "extern_libs": [
+                [
+                    "libdevice",
+                    "/home/waabi-user/.local/lib/python3.10/site-packages/triton/backends/nvidia/lib/libdevice.10.bc"
+                ]
+            ],
+            "global_scratch_align": 1,
+            "global_scratch_size": 0,
+            "hash": "b2a272eab46efa57d41caedfb00495832a72d7c7140b0225d091199a107ec6c9",
+            "launch_cooperative_grid": false,
+            "max_num_imprecise_acc_default": 0,
+            "maxnreg": null,
+            "name": "implicit_conv3d_kernel",
+            "num_buffers_warp_spec": 0,
+            "num_consumer_groups": 0,
+            "num_ctas": 1,
+            "num_stages": 2,
+            "num_warps": 2,
+            "ptx_version": null,
+            "reg_dec_producer": 0,
+            "reg_inc_consumer": 0,
+            "sanitize_overflow": true,
+            "shared": 1024,
+            "supported_fp8_dtypes": [
+                "fp8e4b15",
+                "fp8e4nv",
+                "fp8e5"
+            ],
+            "target": null,
+            "tmem_size": 0,
+            "triton_version": "3.3.1"
+        }
+    },
+    "Config(block_sizes={'BLOCK_N': 16, 'BLOCK_K': 32, 'BLOCK_Dp': 64}, num_warps=4, num_stages=3, div_k=False, div_d=False, div_dp=True, dtype='fp16', sm=89).ptx": {
+        "config": {
+            "block_sizes": {
+                "BLOCK_N": 16,
+                "BLOCK_K": 32,
+                "BLOCK_Dp": 64
+            },
+            "num_warps": 4,
+            "num_stages": 3,
+            "div_k": false,
+            "div_d": false,
+            "div_dp": true,
+            "dtype": "fp16",
+            "sm": 89
+        },
+        "meta": {
+            "allowed_dot_input_precisions": [
+                "tf32",
+                "tf32x3",
+                "ieee"
+            ],
+            "arch": "sm89",
+            "backend_name": "cuda",
+            "cluster_dims": [
+                1,
+                1,
+                1
+            ],
+            "debug": false,
+            "default_dot_input_precision": "tf32",
+            "deprecated_fp8_dtypes": [],
+            "enable_fp_fusion": true,
+            "extern_libs": [
+                [
+                    "libdevice",
+                    "/home/waabi-user/.local/lib/python3.10/site-packages/triton/backends/nvidia/lib/libdevice.10.bc"
+                ]
+            ],
+            "global_scratch_align": 1,
+            "global_scratch_size": 0,
+            "hash": "07cb53b2d3f6dcfece30f68396052fe9e7506c9e0613e4f87a909c271c968f2d",
+            "launch_cooperative_grid": false,
+            "max_num_imprecise_acc_default": 0,
+            "maxnreg": null,
+            "name": "implicit_conv3d_kernel",
+            "num_buffers_warp_spec": 0,
+            "num_consumer_groups": 0,
+            "num_ctas": 1,
+            "num_stages": 3,
+            "num_warps": 4,
+            "ptx_version": null,
+            "reg_dec_producer": 0,
+            "reg_inc_consumer": 0,
+            "sanitize_overflow": true,
+            "shared": 9216,
+            "supported_fp8_dtypes": [
+                "fp8e4b15",
+                "fp8e4nv",
+                "fp8e5"
+            ],
+            "target": null,
+            "tmem_size": 0,
+            "triton_version": "3.3.1"
+        }
+    },
+    "Config(block_sizes={'BLOCK_N': 32, 'BLOCK_K': 32, 'BLOCK_Dp': 16}, num_warps=2, num_stages=2, div_k=False, div_d=False, div_dp=True, dtype='fp16', sm=89).ptx": {
+        "config": {
+            "block_sizes": {
+                "BLOCK_N": 32,
+                "BLOCK_K": 32,
+                "BLOCK_Dp": 16
+            },
+            "num_warps": 2,
+            "num_stages": 2,
+            "div_k": false,
+            "div_d": false,
+            "div_dp": true,
+            "dtype": "fp16",
+            "sm": 89
+        },
+        "meta": {
+            "allowed_dot_input_precisions": [
+                "tf32",
+                "tf32x3",
+                "ieee"
+            ],
+            "arch": "sm89",
+            "backend_name": "cuda",
+            "cluster_dims": [
+                1,
+                1,
+                1
+            ],
+            "debug": false,
+            "default_dot_input_precision": "tf32",
+            "deprecated_fp8_dtypes": [],
+            "enable_fp_fusion": true,
+            "extern_libs": [
+                [
+                    "libdevice",
+                    "/home/waabi-user/.local/lib/python3.10/site-packages/triton/backends/nvidia/lib/libdevice.10.bc"
+                ]
+            ],
+            "global_scratch_align": 1,
+            "global_scratch_size": 0,
+            "hash": "6ef4e70e9e8443754629d38fa119f0063b6c13a44cf8d5cd09cc20da12ab691a",
+            "launch_cooperative_grid": false,
+            "max_num_imprecise_acc_default": 0,
+            "maxnreg": null,
+            "name": "implicit_conv3d_kernel",
+            "num_buffers_warp_spec": 0,
+            "num_consumer_groups": 0,
+            "num_ctas": 1,
+            "num_stages": 2,
+            "num_warps": 2,
+            "ptx_version": null,
+            "reg_dec_producer": 0,
+            "reg_inc_consumer": 0,
+            "sanitize_overflow": true,
+            "shared": 3072,
+            "supported_fp8_dtypes": [
+                "fp8e4b15",
+                "fp8e4nv",
+                "fp8e5"
+            ],
+            "target": null,
+            "tmem_size": 0,
+            "triton_version": "3.3.1"
+        }
+    },
+    "Config(block_sizes={'BLOCK_N': 16, 'BLOCK_K': 32, 'BLOCK_Dp': 128}, num_warps=8, num_stages=3, div_k=False, div_d=False, div_dp=True, dtype='fp16', sm=89).ptx": {
+        "config": {
+            "block_sizes": {
+                "BLOCK_N": 16,
+                "BLOCK_K": 32,
+                "BLOCK_Dp": 128
+            },
+            "num_warps": 8,
+            "num_stages": 3,
+            "div_k": false,
+            "div_d": false,
+            "div_dp": true,
+            "dtype": "fp16",
+            "sm": 89
+        },
+        "meta": {
+            "allowed_dot_input_precisions": [
+                "tf32",
+                "tf32x3",
+                "ieee"
+            ],
+            "arch": "sm89",
+            "backend_name": "cuda",
+            "cluster_dims": [
+                1,
+                1,
+                1
+            ],
+            "debug": false,
+            "default_dot_input_precision": "tf32",
+            "deprecated_fp8_dtypes": [],
+            "enable_fp_fusion": true,
+            "extern_libs": [
+                [
+                    "libdevice",
+                    "/home/waabi-user/.local/lib/python3.10/site-packages/triton/backends/nvidia/lib/libdevice.10.bc"
+                ]
+            ],
+            "global_scratch_align": 1,
+            "global_scratch_size": 0,
+            "hash": "393dcc6ac005fe3844acf6cefaaa61abaa68c6d6af0f6166cb04ecdc2aa469b0",
+            "launch_cooperative_grid": false,
+            "max_num_imprecise_acc_default": 0,
+            "maxnreg": null,
+            "name": "implicit_conv3d_kernel",
+            "num_buffers_warp_spec": 0,
+            "num_consumer_groups": 0,
+            "num_ctas": 1,
+            "num_stages": 3,
+            "num_warps": 8,
+            "ptx_version": null,
+            "reg_dec_producer": 0,
+            "reg_inc_consumer": 0,
+            "sanitize_overflow": true,
+            "shared": 17408,
+            "supported_fp8_dtypes": [
+                "fp8e4b15",
+                "fp8e4nv",
+                "fp8e5"
+            ],
+            "target": null,
+            "tmem_size": 0,
+            "triton_version": "3.3.1"
+        }
+    },
+    "Config(block_sizes={'BLOCK_N': 128, 'BLOCK_K': 32, 'BLOCK_Dp': 32}, num_warps=4, num_stages=2, div_k=False, div_d=False, div_dp=True, dtype='fp16', sm=89).ptx": {
+        "config": {
+            "block_sizes": {
+                "BLOCK_N": 128,
+                "BLOCK_K": 32,
+                "BLOCK_Dp": 32
+            },
+            "num_warps": 4,
+            "num_stages": 2,
+            "div_k": false,
+            "div_d": false,
+            "div_dp": true,
+            "dtype": "fp16",
+            "sm": 89
+        },
+        "meta": {
+            "allowed_dot_input_precisions": [
+                "tf32",
+                "tf32x3",
+                "ieee"
+            ],
+            "arch": "sm89",
+            "backend_name": "cuda",
+            "cluster_dims": [
+                1,
+                1,
+                1
+            ],
+            "debug": false,
+            "default_dot_input_precision": "tf32",
+            "deprecated_fp8_dtypes": [],
+            "enable_fp_fusion": true,
+            "extern_libs": [
+                [
+                    "libdevice",
+                    "/home/waabi-user/.local/lib/python3.10/site-packages/triton/backends/nvidia/lib/libdevice.10.bc"
+                ]
+            ],
+            "global_scratch_align": 1,
+            "global_scratch_size": 0,
+            "hash": "a726c3253de516193d0d4fe664abd7629fae9b0ba31b0306a33675b0251edc05",
+            "launch_cooperative_grid": false,
+            "max_num_imprecise_acc_default": 0,
+            "maxnreg": null,
+            "name": "implicit_conv3d_kernel",
+            "num_buffers_warp_spec": 0,
+            "num_consumer_groups": 0,
+            "num_ctas": 1,
+            "num_stages": 2,
+            "num_warps": 4,
+            "ptx_version": null,
+            "reg_dec_producer": 0,
+            "reg_inc_consumer": 0,
+            "sanitize_overflow": true,
+            "shared": 10240,
+            "supported_fp8_dtypes": [
+                "fp8e4b15",
+                "fp8e4nv",
+                "fp8e5"
+            ],
+            "target": null,
+            "tmem_size": 0,
+            "triton_version": "3.3.1"
+        }
+    },
+    "Config(block_sizes={'BLOCK_N': 16, 'BLOCK_K': 64, 'BLOCK_Dp': 64}, num_warps=4, num_stages=3, div_k=False, div_d=False, div_dp=True, dtype='fp16', sm=89).ptx": {
+        "config": {
+            "block_sizes": {
+                "BLOCK_N": 16,
+                "BLOCK_K": 64,
+                "BLOCK_Dp": 64
+            },
+            "num_warps": 4,
+            "num_stages": 3,
+            "div_k": false,
+            "div_d": false,
+            "div_dp": true,
+            "dtype": "fp16",
+            "sm": 89
+        },
+        "meta": {
+            "allowed_dot_input_precisions": [
+                "tf32",
+                "tf32x3",
+                "ieee"
+            ],
+            "arch": "sm89",
+            "backend_name": "cuda",
+            "cluster_dims": [
+                1,
+                1,
+                1
+            ],
+            "debug": false,
+            "default_dot_input_precision": "tf32",
+            "deprecated_fp8_dtypes": [],
+            "enable_fp_fusion": true,
+            "extern_libs": [
+                [
+                    "libdevice",
+                    "/home/waabi-user/.local/lib/python3.10/site-packages/triton/backends/nvidia/lib/libdevice.10.bc"
+                ]
+            ],
+            "global_scratch_align": 1,
+            "global_scratch_size": 0,
+            "hash": "1fda6bafde2655e0c88be59f325e65b9f93a14e6b5bf71ecf8a66a78fd4ea2bf",
+            "launch_cooperative_grid": false,
+            "max_num_imprecise_acc_default": 0,
+            "maxnreg": null,
+            "name": "implicit_conv3d_kernel",
+            "num_buffers_warp_spec": 0,
+            "num_consumer_groups": 0,
+            "num_ctas": 1,
+            "num_stages": 3,
+            "num_warps": 4,
+            "ptx_version": null,
+            "reg_dec_producer": 0,
+            "reg_inc_consumer": 0,
+            "sanitize_overflow": true,
+            "shared": 18432,
+            "supported_fp8_dtypes": [
+                "fp8e4b15",
+                "fp8e4nv",
+                "fp8e5"
+            ],
+            "target": null,
+            "tmem_size": 0,
+            "triton_version": "3.3.1"
+        }
+    },
+    "Config(block_sizes={'BLOCK_N': 16, 'BLOCK_K': 32, 'BLOCK_Dp': 32}, num_warps=2, num_stages=2, div_k=False, div_d=False, div_dp=True, dtype='fp16', sm=89).ptx": {
+        "config": {
+            "block_sizes": {
+                "BLOCK_N": 16,
+                "BLOCK_K": 32,
+                "BLOCK_Dp": 32
+            },
+            "num_warps": 2,
+            "num_stages": 2,
+            "div_k": false,
+            "div_d": false,
+            "div_dp": true,
+            "dtype": "fp16",
+            "sm": 89
+        },
+        "meta": {
+            "allowed_dot_input_precisions": [
+                "tf32",
+                "tf32x3",
+                "ieee"
+            ],
+            "arch": "sm89",
+            "backend_name": "cuda",
+            "cluster_dims": [
+                1,
+                1,
+                1
+            ],
+            "debug": false,
+            "default_dot_input_precision": "tf32",
+            "deprecated_fp8_dtypes": [],
+            "enable_fp_fusion": true,
+            "extern_libs": [
+                [
+                    "libdevice",
+                    "/home/waabi-user/.local/lib/python3.10/site-packages/triton/backends/nvidia/lib/libdevice.10.bc"
+                ]
+            ],
+            "global_scratch_align": 1,
+            "global_scratch_size": 0,
+            "hash": "ff483d98354e418ba9c8319be51bb67bdead76d03f7fc4937400a8198d295ddc",
+            "launch_cooperative_grid": false,
+            "max_num_imprecise_acc_default": 0,
+            "maxnreg": null,
+            "name": "implicit_conv3d_kernel",
+            "num_buffers_warp_spec": 0,
+            "num_consumer_groups": 0,
+            "num_ctas": 1,
+            "num_stages": 2,
+            "num_warps": 2,
+            "ptx_version": null,
+            "reg_dec_producer": 0,
+            "reg_inc_consumer": 0,
+            "sanitize_overflow": true,
+            "shared": 3072,
+            "supported_fp8_dtypes": [
+                "fp8e4b15",
+                "fp8e4nv",
+                "fp8e5"
+            ],
+            "target": null,
+            "tmem_size": 0,
+            "triton_version": "3.3.1"
+        }
+    },
+    "Config(block_sizes={'BLOCK_N': 32, 'BLOCK_K': 16, 'BLOCK_Dp': 32}, num_warps=2, num_stages=2, div_k=False, div_d=False, div_dp=True, dtype='fp16', sm=89).ptx": {
+        "config": {
+            "block_sizes": {
+                "BLOCK_N": 32,
+                "BLOCK_K": 16,
+                "BLOCK_Dp": 32
+            },
+            "num_warps": 2,
+            "num_stages": 2,
+            "div_k": false,
+            "div_d": false,
+            "div_dp": true,
+            "dtype": "fp16",
+            "sm": 89
+        },
+        "meta": {
+            "allowed_dot_input_precisions": [
+                "tf32",
+                "tf32x3",
+                "ieee"
+            ],
+            "arch": "sm89",
+            "backend_name": "cuda",
+            "cluster_dims": [
+                1,
+                1,
+                1
+            ],
+            "debug": false,
+            "default_dot_input_precision": "tf32",
+            "deprecated_fp8_dtypes": [],
+            "enable_fp_fusion": true,
+            "extern_libs": [
+                [
+                    "libdevice",
+                    "/home/waabi-user/.local/lib/python3.10/site-packages/triton/backends/nvidia/lib/libdevice.10.bc"
+                ]
+            ],
+            "global_scratch_align": 1,
+            "global_scratch_size": 0,
+            "hash": "a0f4dd65673b72c337e5bbf2ea45a61ca8c4ab3e5b23e343d73f0634a5a766cc",
+            "launch_cooperative_grid": false,
+            "max_num_imprecise_acc_default": 0,
+            "maxnreg": null,
+            "name": "implicit_conv3d_kernel",
+            "num_buffers_warp_spec": 0,
+            "num_consumer_groups": 0,
+            "num_ctas": 1,
+            "num_stages": 2,
+            "num_warps": 2,
+            "ptx_version": null,
+            "reg_dec_producer": 0,
+            "reg_inc_consumer": 0,
+            "sanitize_overflow": true,
+            "shared": 2048,
+            "supported_fp8_dtypes": [
+                "fp8e4b15",
+                "fp8e4nv",
+                "fp8e5"
+            ],
+            "target": null,
+            "tmem_size": 0,
+            "triton_version": "3.3.1"
+        }
+    },
+    "Config(block_sizes={'BLOCK_N': 32, 'BLOCK_K': 16, 'BLOCK_Dp': 16}, num_warps=2, num_stages=2, div_k=False, div_d=False, div_dp=False, dtype='fp16', sm=89).ptx": {
+        "config": {
+            "block_sizes": {
+                "BLOCK_N": 32,
+                "BLOCK_K": 16,
+                "BLOCK_Dp": 16
+            },
+            "num_warps": 2,
+            "num_stages": 2,
+            "div_k": false,
+            "div_d": false,
+            "div_dp": false,
+            "dtype": "fp16",
+            "sm": 89
+        },
+        "meta": {
+            "allowed_dot_input_precisions": [
+                "tf32",
+                "tf32x3",
+                "ieee"
+            ],
+            "arch": "sm89",
+            "backend_name": "cuda",
+            "cluster_dims": [
+                1,
+                1,
+                1
+            ],
+            "debug": false,
+            "default_dot_input_precision": "tf32",
+            "deprecated_fp8_dtypes": [],
+            "enable_fp_fusion": true,
+            "extern_libs": [
+                [
+                    "libdevice",
+                    "/home/waabi-user/.local/lib/python3.10/site-packages/triton/backends/nvidia/lib/libdevice.10.bc"
+                ]
+            ],
+            "global_scratch_align": 1,
+            "global_scratch_size": 0,
+            "hash": "b75aea6d101f332ce6b5bf194afdca436ed5162b437789dbcc49476e81ad3e50",
+            "launch_cooperative_grid": false,
+            "max_num_imprecise_acc_default": 0,
+            "maxnreg": null,
+            "name": "implicit_conv3d_kernel",
+            "num_buffers_warp_spec": 0,
+            "num_consumer_groups": 0,
+            "num_ctas": 1,
+            "num_stages": 2,
+            "num_warps": 2,
+            "ptx_version": null,
+            "reg_dec_producer": 0,
+            "reg_inc_consumer": 0,
+            "sanitize_overflow": true,
+            "shared": 1536,
+            "supported_fp8_dtypes": [
+                "fp8e4b15",
+                "fp8e4nv",
+                "fp8e5"
+            ],
+            "target": null,
+            "tmem_size": 0,
+            "triton_version": "3.3.1"
+        }
+    },
+    "Config(block_sizes={'BLOCK_N': 16, 'BLOCK_K': 16, 'BLOCK_Dp': 16}, num_warps=2, num_stages=2, div_k=False, div_d=False, div_dp=False, dtype='fp16', sm=89).ptx": {
+        "config": {
+            "block_sizes": {
+                "BLOCK_N": 16,
+                "BLOCK_K": 16,
+                "BLOCK_Dp": 16
+            },
+            "num_warps": 2,
+            "num_stages": 2,
+            "div_k": false,
+            "div_d": false,
+            "div_dp": false,
+            "dtype": "fp16",
+            "sm": 89
+        },
+        "meta": {
+            "allowed_dot_input_precisions": [
+                "tf32",
+                "tf32x3",
+                "ieee"
+            ],
+            "arch": "sm89",
+            "backend_name": "cuda",
+            "cluster_dims": [
+                1,
+                1,
+                1
+            ],
+            "debug": false,
+            "default_dot_input_precision": "tf32",
+            "deprecated_fp8_dtypes": [],
+            "enable_fp_fusion": true,
+            "extern_libs": [
+                [
+                    "libdevice",
+                    "/home/waabi-user/.local/lib/python3.10/site-packages/triton/backends/nvidia/lib/libdevice.10.bc"
+                ]
+            ],
+            "global_scratch_align": 1,
+            "global_scratch_size": 0,
+            "hash": "eb000d0725ad87ea3287d265e4a10302a771aa39cd102e5e64b170d713f18d5d",
+            "launch_cooperative_grid": false,
+            "max_num_imprecise_acc_default": 0,
+            "maxnreg": null,
+            "name": "implicit_conv3d_kernel",
+            "num_buffers_warp_spec": 0,
+            "num_consumer_groups": 0,
+            "num_ctas": 1,
+            "num_stages": 2,
+            "num_warps": 2,
+            "ptx_version": null,
+            "reg_dec_producer": 0,
+            "reg_inc_consumer": 0,
+            "sanitize_overflow": true,
+            "shared": 1024,
+            "supported_fp8_dtypes": [
+                "fp8e4b15",
+                "fp8e4nv",
+                "fp8e5"
+            ],
+            "target": null,
+            "tmem_size": 0,
+            "triton_version": "3.3.1"
+        }
+    },
+    "Config(block_sizes={'BLOCK_N': 16, 'BLOCK_K': 32, 'BLOCK_Dp': 64}, num_warps=4, num_stages=3, div_k=False, div_d=False, div_dp=False, dtype='fp16', sm=89).ptx": {
+        "config": {
+            "block_sizes": {
+                "BLOCK_N": 16,
+                "BLOCK_K": 32,
+                "BLOCK_Dp": 64
+            },
+            "num_warps": 4,
+            "num_stages": 3,
+            "div_k": false,
+            "div_d": false,
+            "div_dp": false,
+            "dtype": "fp16",
+            "sm": 89
+        },
+        "meta": {
+            "allowed_dot_input_precisions": [
+                "tf32",
+                "tf32x3",
+                "ieee"
+            ],
+            "arch": "sm89",
+            "backend_name": "cuda",
+            "cluster_dims": [
+                1,
+                1,
+                1
+            ],
+            "debug": false,
+            "default_dot_input_precision": "tf32",
+            "deprecated_fp8_dtypes": [],
+            "enable_fp_fusion": true,
+            "extern_libs": [
+                [
+                    "libdevice",
+                    "/home/waabi-user/.local/lib/python3.10/site-packages/triton/backends/nvidia/lib/libdevice.10.bc"
+                ]
+            ],
+            "global_scratch_align": 1,
+            "global_scratch_size": 0,
+            "hash": "51c96d3fa5102ab0ecc0d64a2bed24d16ed6af36787255075c398d668c968646",
+            "launch_cooperative_grid": false,
+            "max_num_imprecise_acc_default": 0,
+            "maxnreg": null,
+            "name": "implicit_conv3d_kernel",
+            "num_buffers_warp_spec": 0,
+            "num_consumer_groups": 0,
+            "num_ctas": 1,
+            "num_stages": 3,
+            "num_warps": 4,
+            "ptx_version": null,
+            "reg_dec_producer": 0,
+            "reg_inc_consumer": 0,
+            "sanitize_overflow": true,
+            "shared": 5120,
+            "supported_fp8_dtypes": [
+                "fp8e4b15",
+                "fp8e4nv",
+                "fp8e5"
+            ],
+            "target": null,
+            "tmem_size": 0,
+            "triton_version": "3.3.1"
+        }
+    },
+    "Config(block_sizes={'BLOCK_N': 32, 'BLOCK_K': 32, 'BLOCK_Dp': 16}, num_warps=2, num_stages=2, div_k=False, div_d=False, div_dp=False, dtype='fp16', sm=89).ptx": {
+        "config": {
+            "block_sizes": {
+                "BLOCK_N": 32,
+                "BLOCK_K": 32,
+                "BLOCK_Dp": 16
+            },
+            "num_warps": 2,
+            "num_stages": 2,
+            "div_k": false,
+            "div_d": false,
+            "div_dp": false,
+            "dtype": "fp16",
+            "sm": 89
+        },
+        "meta": {
+            "allowed_dot_input_precisions": [
+                "tf32",
+                "tf32x3",
+                "ieee"
+            ],
+            "arch": "sm89",
+            "backend_name": "cuda",
+            "cluster_dims": [
+                1,
+                1,
+                1
+            ],
+            "debug": false,
+            "default_dot_input_precision": "tf32",
+            "deprecated_fp8_dtypes": [],
+            "enable_fp_fusion": true,
+            "extern_libs": [
+                [
+                    "libdevice",
+                    "/home/waabi-user/.local/lib/python3.10/site-packages/triton/backends/nvidia/lib/libdevice.10.bc"
+                ]
+            ],
+            "global_scratch_align": 1,
+            "global_scratch_size": 0,
+            "hash": "aa17cbdd1c961e28ac676906db16038549b1bf389bdfd65b96c5b5d2a87b3e20",
+            "launch_cooperative_grid": false,
+            "max_num_imprecise_acc_default": 0,
+            "maxnreg": null,
+            "name": "implicit_conv3d_kernel",
+            "num_buffers_warp_spec": 0,
+            "num_consumer_groups": 0,
+            "num_ctas": 1,
+            "num_stages": 2,
+            "num_warps": 2,
+            "ptx_version": null,
+            "reg_dec_producer": 0,
+            "reg_inc_consumer": 0,
+            "sanitize_overflow": true,
+            "shared": 3072,
+            "supported_fp8_dtypes": [
+                "fp8e4b15",
+                "fp8e4nv",
+                "fp8e5"
+            ],
+            "target": null,
+            "tmem_size": 0,
+            "triton_version": "3.3.1"
+        }
+    },
+    "Config(block_sizes={'BLOCK_N': 16, 'BLOCK_K': 32, 'BLOCK_Dp': 128}, num_warps=8, num_stages=3, div_k=False, div_d=False, div_dp=False, dtype='fp16', sm=89).ptx": {
+        "config": {
+            "block_sizes": {
+                "BLOCK_N": 16,
+                "BLOCK_K": 32,
+                "BLOCK_Dp": 128
+            },
+            "num_warps": 8,
+            "num_stages": 3,
+            "div_k": false,
+            "div_d": false,
+            "div_dp": false,
+            "dtype": "fp16",
+            "sm": 89
+        },
+        "meta": {
+            "allowed_dot_input_precisions": [
+                "tf32",
+                "tf32x3",
+                "ieee"
+            ],
+            "arch": "sm89",
+            "backend_name": "cuda",
+            "cluster_dims": [
+                1,
+                1,
+                1
+            ],
+            "debug": false,
+            "default_dot_input_precision": "tf32",
+            "deprecated_fp8_dtypes": [],
+            "enable_fp_fusion": true,
+            "extern_libs": [
+                [
+                    "libdevice",
+                    "/home/waabi-user/.local/lib/python3.10/site-packages/triton/backends/nvidia/lib/libdevice.10.bc"
+                ]
+            ],
+            "global_scratch_align": 1,
+            "global_scratch_size": 0,
+            "hash": "b61b907294696cdf63ab244ba04773fde5233475e8586ed96a28a3bd7428c120",
+            "launch_cooperative_grid": false,
+            "max_num_imprecise_acc_default": 0,
+            "maxnreg": null,
+            "name": "implicit_conv3d_kernel",
+            "num_buffers_warp_spec": 0,
+            "num_consumer_groups": 0,
+            "num_ctas": 1,
+            "num_stages": 3,
+            "num_warps": 8,
+            "ptx_version": null,
+            "reg_dec_producer": 0,
+            "reg_inc_consumer": 0,
+            "sanitize_overflow": true,
+            "shared": 9216,
+            "supported_fp8_dtypes": [
+                "fp8e4b15",
+                "fp8e4nv",
+                "fp8e5"
+            ],
+            "target": null,
+            "tmem_size": 0,
+            "triton_version": "3.3.1"
+        }
+    },
+    "Config(block_sizes={'BLOCK_N': 128, 'BLOCK_K': 32, 'BLOCK_Dp': 32}, num_warps=4, num_stages=2, div_k=False, div_d=False, div_dp=False, dtype='fp16', sm=89).ptx": {
+        "config": {
+            "block_sizes": {
+                "BLOCK_N": 128,
+                "BLOCK_K": 32,
+                "BLOCK_Dp": 32
+            },
+            "num_warps": 4,
+            "num_stages": 2,
+            "div_k": false,
+            "div_d": false,
+            "div_dp": false,
+            "dtype": "fp16",
+            "sm": 89
+        },
+        "meta": {
+            "allowed_dot_input_precisions": [
+                "tf32",
+                "tf32x3",
+                "ieee"
+            ],
+            "arch": "sm89",
+            "backend_name": "cuda",
+            "cluster_dims": [
+                1,
+                1,
+                1
+            ],
+            "debug": false,
+            "default_dot_input_precision": "tf32",
+            "deprecated_fp8_dtypes": [],
+            "enable_fp_fusion": true,
+            "extern_libs": [
+                [
+                    "libdevice",
+                    "/home/waabi-user/.local/lib/python3.10/site-packages/triton/backends/nvidia/lib/libdevice.10.bc"
+                ]
+            ],
+            "global_scratch_align": 1,
+            "global_scratch_size": 0,
+            "hash": "8f492390e71e67a79dbf209b8a862beb53d73f3d2b7ff0a0d14950604e92bb75",
+            "launch_cooperative_grid": false,
+            "max_num_imprecise_acc_default": 0,
+            "maxnreg": null,
+            "name": "implicit_conv3d_kernel",
+            "num_buffers_warp_spec": 0,
+            "num_consumer_groups": 0,
+            "num_ctas": 1,
+            "num_stages": 2,
+            "num_warps": 4,
+            "ptx_version": null,
+            "reg_dec_producer": 0,
+            "reg_inc_consumer": 0,
+            "sanitize_overflow": true,
+            "shared": 10240,
+            "supported_fp8_dtypes": [
+                "fp8e4b15",
+                "fp8e4nv",
+                "fp8e5"
+            ],
+            "target": null,
+            "tmem_size": 0,
+            "triton_version": "3.3.1"
+        }
+    },
+    "Config(block_sizes={'BLOCK_N': 16, 'BLOCK_K': 64, 'BLOCK_Dp': 64}, num_warps=4, num_stages=3, div_k=False, div_d=False, div_dp=False, dtype='fp16', sm=89).ptx": {
+        "config": {
+            "block_sizes": {
+                "BLOCK_N": 16,
+                "BLOCK_K": 64,
+                "BLOCK_Dp": 64
+            },
+            "num_warps": 4,
+            "num_stages": 3,
+            "div_k": false,
+            "div_d": false,
+            "div_dp": false,
+            "dtype": "fp16",
+            "sm": 89
+        },
+        "meta": {
+            "allowed_dot_input_precisions": [
+                "tf32",
+                "tf32x3",
+                "ieee"
+            ],
+            "arch": "sm89",
+            "backend_name": "cuda",
+            "cluster_dims": [
+                1,
+                1,
+                1
+            ],
+            "debug": false,
+            "default_dot_input_precision": "tf32",
+            "deprecated_fp8_dtypes": [],
+            "enable_fp_fusion": true,
+            "extern_libs": [
+                [
+                    "libdevice",
+                    "/home/waabi-user/.local/lib/python3.10/site-packages/triton/backends/nvidia/lib/libdevice.10.bc"
+                ]
+            ],
+            "global_scratch_align": 1,
+            "global_scratch_size": 0,
+            "hash": "7ea129af81feee83e9e1b9d232286bd6aa7febcc2ffebd94cf241dfd24e57b1c",
+            "launch_cooperative_grid": false,
+            "max_num_imprecise_acc_default": 0,
+            "maxnreg": null,
+            "name": "implicit_conv3d_kernel",
+            "num_buffers_warp_spec": 0,
+            "num_consumer_groups": 0,
+            "num_ctas": 1,
+            "num_stages": 3,
+            "num_warps": 4,
+            "ptx_version": null,
+            "reg_dec_producer": 0,
+            "reg_inc_consumer": 0,
+            "sanitize_overflow": true,
+            "shared": 10240,
+            "supported_fp8_dtypes": [
+                "fp8e4b15",
+                "fp8e4nv",
+                "fp8e5"
+            ],
+            "target": null,
+            "tmem_size": 0,
+            "triton_version": "3.3.1"
+        }
+    },
+    "Config(block_sizes={'BLOCK_N': 16, 'BLOCK_K': 32, 'BLOCK_Dp': 32}, num_warps=2, num_stages=2, div_k=False, div_d=False, div_dp=False, dtype='fp16', sm=89).ptx": {
+        "config": {
+            "block_sizes": {
+                "BLOCK_N": 16,
+                "BLOCK_K": 32,
+                "BLOCK_Dp": 32
+            },
+            "num_warps": 2,
+            "num_stages": 2,
+            "div_k": false,
+            "div_d": false,
+            "div_dp": false,
+            "dtype": "fp16",
+            "sm": 89
+        },
+        "meta": {
+            "allowed_dot_input_precisions": [
+                "tf32",
+                "tf32x3",
+                "ieee"
+            ],
+            "arch": "sm89",
+            "backend_name": "cuda",
+            "cluster_dims": [
+                1,
+                1,
+                1
+            ],
+            "debug": false,
+            "default_dot_input_precision": "tf32",
+            "deprecated_fp8_dtypes": [],
+            "enable_fp_fusion": true,
+            "extern_libs": [
+                [
+                    "libdevice",
+                    "/home/waabi-user/.local/lib/python3.10/site-packages/triton/backends/nvidia/lib/libdevice.10.bc"
+                ]
+            ],
+            "global_scratch_align": 1,
+            "global_scratch_size": 0,
+            "hash": "7cfc48b5c0013a1e742cc2fab214ceb322c108fa24bdc5a9ff023e8874dccc56",
+            "launch_cooperative_grid": false,
+            "max_num_imprecise_acc_default": 0,
+            "maxnreg": null,
+            "name": "implicit_conv3d_kernel",
+            "num_buffers_warp_spec": 0,
+            "num_consumer_groups": 0,
+            "num_ctas": 1,
+            "num_stages": 2,
+            "num_warps": 2,
+            "ptx_version": null,
+            "reg_dec_producer": 0,
+            "reg_inc_consumer": 0,
+            "sanitize_overflow": true,
+            "shared": 3072,
+            "supported_fp8_dtypes": [
+                "fp8e4b15",
+                "fp8e4nv",
+                "fp8e5"
+            ],
+            "target": null,
+            "tmem_size": 0,
+            "triton_version": "3.3.1"
+        }
+    },
+    "Config(block_sizes={'BLOCK_N': 32, 'BLOCK_K': 16, 'BLOCK_Dp': 32}, num_warps=2, num_stages=2, div_k=False, div_d=False, div_dp=False, dtype='fp16', sm=89).ptx": {
+        "config": {
+            "block_sizes": {
+                "BLOCK_N": 32,
+                "BLOCK_K": 16,
+                "BLOCK_Dp": 32
+            },
+            "num_warps": 2,
+            "num_stages": 2,
+            "div_k": false,
+            "div_d": false,
+            "div_dp": false,
+            "dtype": "fp16",
+            "sm": 89
+        },
+        "meta": {
+            "allowed_dot_input_precisions": [
+                "tf32",
+                "tf32x3",
+                "ieee"
+            ],
+            "arch": "sm89",
+            "backend_name": "cuda",
+            "cluster_dims": [
+                1,
+                1,
+                1
+            ],
+            "debug": false,
+            "default_dot_input_precision": "tf32",
+            "deprecated_fp8_dtypes": [],
+            "enable_fp_fusion": true,
+            "extern_libs": [
+                [
+                    "libdevice",
+                    "/home/waabi-user/.local/lib/python3.10/site-packages/triton/backends/nvidia/lib/libdevice.10.bc"
+                ]
+            ],
+            "global_scratch_align": 1,
+            "global_scratch_size": 0,
+            "hash": "942ce061ac81dd58f0adce4cb3b9a1d2dd1b3c361b1e869b49e04fdc36078b6c",
+            "launch_cooperative_grid": false,
+            "max_num_imprecise_acc_default": 0,
+            "maxnreg": null,
+            "name": "implicit_conv3d_kernel",
+            "num_buffers_warp_spec": 0,
+            "num_consumer_groups": 0,
+            "num_ctas": 1,
+            "num_stages": 2,
+            "num_warps": 2,
+            "ptx_version": null,
+            "reg_dec_producer": 0,
+            "reg_inc_consumer": 0,
+            "sanitize_overflow": true,
+            "shared": 2048,
+            "supported_fp8_dtypes": [
+                "fp8e4b15",
+                "fp8e4nv",
+                "fp8e5"
+            ],
+            "target": null,
+            "tmem_size": 0,
+            "triton_version": "3.3.1"
+        }
+    }
+}
