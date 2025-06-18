@@ -1,11 +1,7 @@
-# Copyright (c) 2021 Waabi Innovation. All rights reserved.
-import torch
-from torch import Tensor
+#Copyright(c) 2021 Waabi Innovation.All rights reserved.
+import torch from torch import Tensor
 
-def encode_z(x: torch.Tensor, depth: int):
-    assert x.dim() == 2
-    assert x.shape[1] == 3
-    assert x.shape[1] * depth < 64
+    def encode_z(x:torch.Tensor, depth: int) :assert x.dim() == 2 assert x.shape[1] == 3 assert x.shape[1] * depth < 64
     return torch.ops.spacy_curves.encode_z(x, depth)
 
 

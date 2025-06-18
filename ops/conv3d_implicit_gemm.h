@@ -1,11 +1,11 @@
 #pragma once
-#include <cuda.h>
 #include "json.hpp"
-#include <string>
 #include <cassert>
+#include <cuda.h>
+#include <string>
 
-#include <iostream>
 #include <fstream>
+#include <iostream>
 #include <sstream>
 #include <vector>
 
@@ -26,50 +26,31 @@ class Conv3DImplicitGemmKernel {
     bool div_d;
     bool div_dp;
     std::string dtype; // "fp16", "fp32"
-    
+
     bool valid;
     CUmodule mod;
     CUfunction func;
-public: 
-    Conv3DImplicitGemmKernel(
-        json config, std::string ptx_path
-    );
+
+  public:
+    Conv3DImplicitGemmKernel(json config, std::string ptx_path);
 
     ~Conv3DImplicitGemmKernel();
 
-    void run(
-        CUdeviceptr features, // [N, D]
-        CUdeviceptr indices, // [N', K**3]
-        CUdeviceptr weights, // [K**3, D, D']
-        CUdeviceptr output, // [N', D']
-        
-        int N,
-        int NPrime,
-        int D,
-        int DPrime,
-        int K,
-        CUstream stream
-    );
+    void run(CUdeviceptr features, // [N, D]
+             CUdeviceptr indices,  // [N', K**3]
+             CUdeviceptr weights,  // [K**3, D, D']
+             CUdeviceptr output,   // [N', D']
 
-    std::string get_dtype() const {
-        return dtype;
-    }
+             int N, int NPrime, int D, int DPrime, int K, CUstream stream);
 
-    bool can_run(
-        int N,
-        int NPrime,
-        int D,
-        int DPrime,
-        int K,
-        std::string dtype
-    ) const {
-        return valid && (dtype == this->dtype) &&
-               (!div_k || K % 16 == 0) &&
-               (!div_d || D % 16 == 0) &&
-               (!div_dp || DPrime % 16 == 0);
+    std::string get_dtype() const { return dtype; }
+
+    bool can_run(int N, int NPrime, int D, int DPrime, int K,
+                 std::string dtype) const {
+        return valid && (dtype == this->dtype) && (!div_k || K % 16 == 0) &&
+               (!div_d || D % 16 == 0) && (!div_dp || DPrime % 16 == 0);
     }
 };
 
-std::vector<std::unique_ptr<Conv3DImplicitGemmKernel>> setup(
-    std::string ptx_dir
-);
+std::vector<std::unique_ptr<Conv3DImplicitGemmKernel>>
+setup(std::string ptx_dir);
