@@ -16,12 +16,15 @@ def generate_ptx(
     warps: int,
     stages: int,
     sm_version: int,
-    output_name: str = 'kernel.ptx'
+    output_name: str = 'kernel.ptx',
+    ptx_version: int | None = None
 ):
     attrs = {(i,): [['tt.divisibility', j]] for i, j in divisibility.items()}
     src = triton.compiler.ASTSource(mod, signature=signature, constexprs=constexprs, attrs=attrs)
     target = triton.backends.compiler.GPUTarget(backend='cuda', arch=sm_version, warp_size=32)
     opts = {'num_warps': warps, 'num_stages': stages}
+    if ptx_version is not None:
+        opts['ptx_version'] = ptx_version
     ccker = triton.compile(src, target, options=opts)
     with open(output_name, 'w') as f:
         print("Compiled Triton kernel")
@@ -103,7 +106,7 @@ def make_configs(sm: int, dtype: str):
     ]
 
 
-def generate_ptx_from_config(config: Config, output_name: str = 'kernel.ptx'):
+def generate_ptx_from_config(config: Config, output_name: str = 'kernel.ptx', ptx_version: int | None = None):
     signature = get_sig(config.dtype)
     dtype_to_triton = {
         'fp16': tl.float16,
@@ -125,18 +128,18 @@ def generate_ptx_from_config(config: Config, output_name: str = 'kernel.ptx'):
         warps=config.num_warps,
         stages=config.num_stages,
         sm_version=config.sm,
-        output_name=output_name
+        output_name=output_name,
+        ptx_version=ptx_version
     )
 
 
 
-def generate_ptx_from_configs(configs: list[Config], output_path: str = 'kernel_ptx'):
+def generate_ptx_from_configs(configs: list[Config], output_path: str = 'kernel_ptx', ptx_version: int | None = None):
     os.makedirs(output_path, exist_ok=True)
     meta = {}
     for i, config in enumerate(configs):
         output_name = f"{config}.ptx"
-        ccinfo = generate_ptx_from_config(config, output_name=os.path.join(output_path, output_name))
-        import triton.tools.compile
+        ccinfo = generate_ptx_from_config(config, output_name=os.path.join(output_path, output_name), ptx_version=ptx_version)
         ker_meta = ccinfo.metadata._asdict()
         ker_meta['target'] = None # ker_meta['target'].asdict()
         meta[output_name] = {
@@ -154,10 +157,11 @@ if __name__ == '__main__':
     parser.add_argument('--sm', type=int, nargs='+', required=True, help='CUDA SM version(s) (e.g., 80 86 89)')
     parser.add_argument('--dtype', type=str, nargs='+', choices=['fp16', 'fp32'], required=True, help='Data type(s) for kernel')
     parser.add_argument('--output', type=str, default='kernel_ptx', help='Output directory for PTX files')
+    parser.add_argument('--ptx_version', type=int, default=None, help='PTX version to use (optional)')
     args = parser.parse_args()
 
     configs = []
     for sm in args.sm:
         for dtype in args.dtype:
             configs.extend(make_configs(int(sm), args.dtype[0]))
-    generate_ptx_from_configs(configs, output_path=args.output)
+    generate_ptx_from_configs(configs, output_path=args.output, ptx_version=args.ptx_version)
