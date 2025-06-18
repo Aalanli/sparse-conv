@@ -178,7 +178,7 @@ def main():
     parser.add_argument('--Ds', type=int, nargs='+', default=[32, 64])
     parser.add_argument('--runs', type=int, default=50)
     parser.add_argument('--warmup', type=int, default=10)
-    parser.add_argument('--plot_file', type=str, default='benchmark.png')
+    parser.add_argument('--plot_file', type=str, required=False, default=None)
     args = parser.parse_args()
 
     # list of implementations
@@ -194,8 +194,8 @@ def main():
     #     ImplicitGemm, args.Ns, args.Ds,
     #     warmup=args.warmup, runs=args.runs
     # )
-
-    plot_results(all_results, args.Ns, args.Ds, out_file=args.plot_file)
+    if args.plot_file is not None:
+        plot_results(all_results, args.Ns, args.Ds, out_file=args.plot_file)
 
 
 if __name__ == '__main__':

@@ -6,7 +6,6 @@
 
 #include <iostream>
 #include <fstream>
-#include <sstream>
 #include <vector>
 #include <filesystem>
 
@@ -54,10 +53,9 @@ Conv3DImplicitGemmKernel::Conv3DImplicitGemmKernel(
     CHECK(cuDeviceGetAttribute(&device_minor, CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MINOR, cuDevice));
     int device_sm = device_major * 10 + device_minor;
 
-    // Check if device SM version is >= compiled SM version
-    valid = (device_sm >= sm);
+    valid = (device_sm == sm);
     if (!valid) {
-        std::cerr << "Device SM " << device_sm << " is less than required SM " << sm
+        std::cerr << "Device SM " << device_sm << " is not equal to the required SM " << sm
                   << ". Kernel will not be loaded from " << ptx_path << std::endl;
         return;
     }
@@ -80,7 +78,10 @@ Conv3DImplicitGemmKernel::Conv3DImplicitGemmKernel(
 }
 
 Conv3DImplicitGemmKernel::~Conv3DImplicitGemmKernel() {
-    cuModuleUnload(mod);
+    if (!valid) {
+        return; // No need to unload if the kernel is not valid
+    }
+    CHECK(cuModuleUnload(mod));
 }
 
 void Conv3DImplicitGemmKernel::run(

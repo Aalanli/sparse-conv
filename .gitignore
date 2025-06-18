@@ -39,3 +39,4 @@ compile_commands.json
 .cache
 *.nsys-rep
 *.ncu-rep
+*.sqlite
