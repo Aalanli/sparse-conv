@@ -40,6 +40,27 @@ Conv3DImplicitGemmKernel::Conv3DImplicitGemmKernel(
     div_d = config["config"]["div_d"];
     div_dp = config["config"]["div_dp"];
     dtype = config["config"]["dtype"];
+    int sm = config["config"]["sm"];
+    
+    // Get current device
+    int device = 0;
+    CHECK(cuCtxGetDevice(&device));
+
+    // Get device properties
+    CUdevice cuDevice;
+    CHECK(cuDeviceGet(&cuDevice, device));
+    int device_major = 0, device_minor = 0;
+    CHECK(cuDeviceGetAttribute(&device_major, CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MAJOR, cuDevice));
+    CHECK(cuDeviceGetAttribute(&device_minor, CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MINOR, cuDevice));
+    int device_sm = device_major * 10 + device_minor;
+
+    // Check if device SM version is >= compiled SM version
+    valid = (device_sm >= sm);
+    if (!valid) {
+        std::cerr << "Device SM " << device_sm << " is less than required SM " << sm
+                  << ". Kernel will not be loaded from " << ptx_path << std::endl;
+        return;
+    }
 
     this->ptx_path = ptx_path;
     std::ifstream ptx_file(ptx_path);

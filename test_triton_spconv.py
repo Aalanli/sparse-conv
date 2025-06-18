@@ -9,10 +9,9 @@ import ops.idx_gen
 from triton_spconv import conv3d_implicit_gemm
 
 voxel_data = []
-for p in glob.glob(os.path.expanduser('~/voxel_data/*.pt')):
-    with open(p, 'rb') as f:
-        voxel_data.append(torch.load(f))
-
+# for p in glob.glob(os.path.expanduser('~/voxel_data/*.pt')):
+#     with open(p, 'rb') as f:
+#         voxel_data.append(torch.load(f))
 
 def reference_conv3d_subm(feats: torch.Tensor, indices: torch.Tensor, weights: torch.Tensor, kernel_size: int):
     n = feats.shape[0]
@@ -37,7 +36,7 @@ def compare_conv3d_subm(coords, dim_in, dim_out, kernel_size):
         print(out_ref)
 
     out_aot = aot_implicit_gemm.conv3d_implicit_gemm(
-        feats, indices, weights, kernel_size, 0
+        feats, indices, weights, kernel_size
     )
 
     print((out_aot - out_ref).abs().max())
@@ -46,9 +45,8 @@ def compare_conv3d_subm(coords, dim_in, dim_out, kernel_size):
     
 
 
-compare_conv3d_subm(voxel_data[0], 16, 32, 3)
-compare_conv3d_subm(voxel_data[0], 64, 64, 3)
-compare_conv3d_subm(voxel_data[1], 128, 128, 3)
-compare_conv3d_subm(voxel_data[2], 64, 128, 3)
-
+compare_conv3d_subm(torch.randint(0, 25, (200000, 4), device='cuda', dtype=torch.int32), 16, 32, 3)
+compare_conv3d_subm(torch.randint(0, 25, (200000, 4), device='cuda', dtype=torch.int32), 64, 64, 3)
+compare_conv3d_subm(torch.randint(0, 25, (200000, 4), device='cuda', dtype=torch.int32), 128, 128, 3)
+compare_conv3d_subm(torch.randint(0, 25, (200000, 4), device='cuda', dtype=torch.int32), 64, 128, 3)
 

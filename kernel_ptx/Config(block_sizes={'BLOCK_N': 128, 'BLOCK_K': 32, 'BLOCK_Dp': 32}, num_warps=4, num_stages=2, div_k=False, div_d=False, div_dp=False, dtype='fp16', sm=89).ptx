@@ -27,16 +27,16 @@
 	.reg .b16 	%rs<474>;
 	.reg .b32 	%r<672>;
 	.reg .b64 	%rd<303>;
-	.loc	1 32 0                          // triton_spconv.py:32:0
+	.loc	1 25 0                          // implicit_gemm_kernel.py:25:0
 $L__func_begin0:
-	.loc	1 32 0                          // triton_spconv.py:32:0
+	.loc	1 25 0                          // implicit_gemm_kernel.py:25:0
 
 // %bb.0:
 	ld.param.u32 	%r106, [implicit_conv3d_kernel_param_7];
 	ld.param.u32 	%r104, [implicit_conv3d_kernel_param_5];
 	ld.param.u64 	%rd92, [implicit_conv3d_kernel_param_3];
 $L__tmp0:
-	.loc	1 47 24                         // triton_spconv.py:47:24
+	.loc	1 40 24                         // implicit_gemm_kernel.py:40:24
 	mov.u32 	%r107, %ctaid.x;
 $L__tmp1:
 	.loc	2 40 22                         // standard.py:40:22
@@ -47,44 +47,44 @@ $L__tmp1:
 	add.s32 	%r111, %r108, %r110;
 	shr.s32 	%r112, %r111, 7;
 $L__tmp2:
-	.loc	1 51 20                         // triton_spconv.py:51:20
+	.loc	1 44 20                         // implicit_gemm_kernel.py:44:20
 	div.s32 	%r1, %r107, %r112;
-	.loc	1 50 18                         // triton_spconv.py:50:18
+	.loc	1 43 18                         // implicit_gemm_kernel.py:43:18
 	mul.lo.s32 	%r114, %r1, %r112;
 	sub.s32 	%r115, %r107, %r114;
 	ld.param.u32 	%r116, [implicit_conv3d_kernel_param_8];
-	.loc	1 53 19                         // triton_spconv.py:53:19
+	.loc	1 46 19                         // implicit_gemm_kernel.py:46:19
 	mul.lo.s32 	%r117, %r116, %r116;
-	.loc	1 53 23                         // triton_spconv.py:53:23
+	.loc	1 46 23                         // implicit_gemm_kernel.py:46:23
 	mul.lo.s32 	%r2, %r117, %r116;
-	.loc	1 56 38                         // triton_spconv.py:56:38
+	.loc	1 49 38                         // implicit_gemm_kernel.py:49:38
 	mov.u32 	%r3, %tid.x;
 	and.b32  	%r4, %r3, 31;
 	and.b32  	%r5, %r3, 16;
 	and.b32  	%r6, %r3, 64;
-	.loc	1 56 57                         // triton_spconv.py:56:57
+	.loc	1 49 57                         // implicit_gemm_kernel.py:49:57
 	shl.b32 	%r8, %r115, 7;
-	.loc	1 58 19                         // triton_spconv.py:58:19
+	.loc	1 51 19                         // implicit_gemm_kernel.py:51:19
 	setp.gt.s32 	%p2, %r2, 0;
 	mov.u32 	%r667, global_smem;
 	@%p2 bra 	$L__BB0_2;
 	bra.uni 	$L__BB0_1;
 $L__BB0_2:                              // %.lr.ph11
-	.loc	1 0 19                          // triton_spconv.py:0:19
+	.loc	1 0 19                          // implicit_gemm_kernel.py:0:19
 	ld.param.u32 	%r105, [implicit_conv3d_kernel_param_6];
 	ld.param.u32 	%r103, [implicit_conv3d_kernel_param_4];
 	ld.param.u64 	%rd91, [implicit_conv3d_kernel_param_2];
 	ld.param.u64 	%rd90, [implicit_conv3d_kernel_param_1];
 	ld.param.u64 	%rd89, [implicit_conv3d_kernel_param_0];
-	.loc	1 56 0                          // triton_spconv.py:56:0
+	.loc	1 49 0                          // implicit_gemm_kernel.py:49:0
 	and.b32  	%r7, %r3, 127;
 	or.b32  	%r9, %r8, %r7;
-	.loc	1 56 68                         // triton_spconv.py:56:68
+	.loc	1 49 68                         // implicit_gemm_kernel.py:49:68
 	mul.lo.s32 	%r121, %r9, %r2;
-	.loc	1 56 24                         // triton_spconv.py:56:24
+	.loc	1 49 24                         // implicit_gemm_kernel.py:49:24
 	mul.wide.s32 	%rd93, %r121, 4;
 	add.s64 	%rd292, %rd90, %rd93;
-	.loc	1 56 38                         // triton_spconv.py:56:38
+	.loc	1 49 38                         // implicit_gemm_kernel.py:49:38
 	and.b32  	%r122, %r3, 15;
 	shr.u32 	%r671, %r3, 5;
 	bfe.u32 	%r123, %r3, 5, 2;
@@ -155,7 +155,7 @@ $L__BB0_2:                              // %.lr.ph11
 	xor.b32  	%r167, %r161, 24;
 	shl.b32 	%r168, %r167, 1;
 	add.s32 	%r273, %r143, %r168;
-	.loc	1 58 19                         // triton_spconv.py:58:19
+	.loc	1 51 19                         // implicit_gemm_kernel.py:51:19
 	cvt.u64.u32 	%rd2, %r4;
 	cvt.s64.s32 	%rd3, %r105;
 	cvt.u64.u32 	%rd4, %r131;
@@ -227,9 +227,9 @@ $L__BB0_2:                              // %.lr.ph11
 	bra.uni 	$L__BB0_3;
 $L__BB0_7:                              // %.loopexit
                                         //   in Loop: Header=BB0_3 Depth=1
-	.loc	1 82 19                         // triton_spconv.py:82:19
+	.loc	1 75 19                         // implicit_gemm_kernel.py:75:19
 	add.s64 	%rd292, %rd292, 4;
-	.loc	1 58 19                         // triton_spconv.py:58:19
+	.loc	1 51 19                         // implicit_gemm_kernel.py:51:19
 	add.s32 	%r668, %r668, 1;
 	add.s64 	%rd291, %rd291, %rd6;
 	add.s64 	%rd290, %rd290, %rd8;
@@ -245,12 +245,12 @@ $L__BB0_7:                              // %.loopexit
 	bra.uni 	$L__BB0_8;
 $L__BB0_3:                              // =>This Loop Header: Depth=1
                                         //     Child Loop BB0_6 Depth 2
-	.loc	1 60 23                         // triton_spconv.py:60:23
+	.loc	1 53 23                         // implicit_gemm_kernel.py:53:23
 	// begin inline asm
 	mov.u32 %r188, 0xffffffffffffffff;
 	@%p5 ld.global.b32 { %r188 }, [ %rd292 + 0 ];
 	// end inline asm
-	.loc	1 66 56                         // triton_spconv.py:66:56
+	.loc	1 59 56                         // implicit_gemm_kernel.py:59:56
 	bar.sync 	0;
 	mov.pred 	%p6, -1;
 	// begin inline asm
@@ -289,13 +289,13 @@ $L__BB0_3:                              // =>This Loop Header: Depth=1
 	ld.shared.u32 	%r64, [%r15+464];
 	ld.shared.u32 	%r65, [%r15+480];
 	ld.shared.u32 	%r66, [%r15+496];
-	.loc	1 62 27                         // triton_spconv.py:62:27
+	.loc	1 55 27                         // implicit_gemm_kernel.py:55:27
 	setp.gt.s32 	%p10, %r188, -1;
-	.loc	1 62 43                         // triton_spconv.py:62:43
+	.loc	1 55 43                         // implicit_gemm_kernel.py:55:43
 	setp.lt.s32 	%p11, %r188, %r103;
-	.loc	1 62 36                         // triton_spconv.py:62:36
+	.loc	1 55 36                         // implicit_gemm_kernel.py:55:36
 	and.pred  	%p12, %p10, %p11;
-	.loc	1 62 50                         // triton_spconv.py:62:50
+	.loc	1 55 50                         // implicit_gemm_kernel.py:55:50
 	bar.sync 	0;
 	selp.u32 	%r192, 1, 0, %p12;
 	mov.b32 	%r193, -1;
@@ -317,19 +317,19 @@ $L__BB0_3:                              // =>This Loop Header: Depth=1
 	and.b32  	%r198, %r197, 1;
 	setp.eq.b32 	%p14, %r198, 1;
 $L__tmp3:
-	.loc	1 13 15                         // triton_spconv.py:13:15
+	.loc	1 6 15                          // implicit_gemm_kernel.py:6:15
 	or.pred  	%p15, %p13, %p14;
 $L__tmp4:
-	.loc	1 62 50                         // triton_spconv.py:62:50
+	.loc	1 55 50                         // implicit_gemm_kernel.py:55:50
 	selp.u32 	%r199, 1, 0, %p15;
 	shfl.sync.bfly.b32	%r200, %r199, 1, 31, -1;
 	and.b32  	%r201, %r200, 1;
 	setp.eq.b32 	%p16, %r201, 1;
 $L__tmp5:
-	.loc	1 13 15                         // triton_spconv.py:13:15
+	.loc	1 6 15                          // implicit_gemm_kernel.py:6:15
 	or.pred  	%p17, %p15, %p16;
 $L__tmp6:
-	.loc	1 62 50                         // triton_spconv.py:62:50
+	.loc	1 55 50                         // implicit_gemm_kernel.py:55:50
 	selp.u16 	%rs197, 1, 0, %p17;
 	// begin inline asm
 	@%p9 st.shared.b8 [ %r190 + 0 ], %rs197;
@@ -338,17 +338,17 @@ $L__tmp6:
 	ld.shared.u8 	%rs200, [global_smem];
 	and.b16  	%rs201, %rs200, 1;
 	setp.eq.b16 	%p18, %rs201, 1;
-	.loc	1 62 11                         // triton_spconv.py:62:11
+	.loc	1 55 11                         // implicit_gemm_kernel.py:55:11
 	not.pred 	%p19, %p18;
 	@%p19 bra 	$L__BB0_7;
 // %bb.4:                               //   in Loop: Header=BB0_3 Depth=1
-	.loc	1 0 11                          // triton_spconv.py:0:11
+	.loc	1 0 11                          // implicit_gemm_kernel.py:0:11
 	setp.lt.s32 	%p20, %r18, 32;
-	.loc	1 63 28                         // triton_spconv.py:63:28
+	.loc	1 56 28                         // implicit_gemm_kernel.py:56:28
 	@%p20 bra 	$L__BB0_7;
 // %bb.5:                               // %.lr.ph.preheader
                                         //   in Loop: Header=BB0_3 Depth=1
-	.loc	1 0 0                           // triton_spconv.py:0:0
+	.loc	1 0 0                           // implicit_gemm_kernel.py:0:0
 	mul.lo.s32 	%r67, %r35, %r105;
 	mul.lo.s32 	%r68, %r36, %r105;
 	mul.lo.s32 	%r69, %r37, %r105;
@@ -381,7 +381,7 @@ $L__tmp6:
 	mul.lo.s32 	%r96, %r64, %r105;
 	mul.lo.s32 	%r97, %r65, %r105;
 	mul.lo.s32 	%r98, %r66, %r105;
-	.loc	1 63 28                         // triton_spconv.py:63:28
+	.loc	1 56 28                         // implicit_gemm_kernel.py:56:28
 	add.s32 	%r202, %r4, %r98;
 	cvt.u64.u32 	%rd27, %r202;
 	add.s32 	%r203, %r4, %r97;
@@ -459,7 +459,7 @@ $L__tmp6:
 $L__BB0_6:                              // %.lr.ph
                                         //   Parent Loop BB0_3 Depth=1
                                         // =>  This Inner Loop Header: Depth=2
-	.loc	1 67 43                         // triton_spconv.py:67:43
+	.loc	1 60 43                         // implicit_gemm_kernel.py:60:43
 	setp.ne.s32 	%p61, %r66, -1;
 	setp.ne.s32 	%p62, %r65, -1;
 	setp.ne.s32 	%p63, %r64, -1;
@@ -493,7 +493,7 @@ $L__BB0_6:                              // %.lr.ph
 	setp.ne.s32 	%p91, %r36, -1;
 	setp.ne.s32 	%p92, %r35, -1;
 	setp.lt.s32 	%p93, %r670, %r106;
-	.loc	1 66 89                         // triton_spconv.py:66:89
+	.loc	1 59 89                         // implicit_gemm_kernel.py:59:89
 	add.s64 	%rd137, %rd58, %rd301;
 	add.s64 	%rd138, %rd57, %rd301;
 	add.s64 	%rd139, %rd56, %rd301;
@@ -525,7 +525,7 @@ $L__BB0_6:                              // %.lr.ph
 	add.s64 	%rd165, %rd30, %rd301;
 	add.s64 	%rd166, %rd29, %rd301;
 	add.s64 	%rd167, %rd28, %rd301;
-	.loc	1 66 36                         // triton_spconv.py:66:36
+	.loc	1 59 36                         // implicit_gemm_kernel.py:59:36
 	add.s64 	%rd168, %rd27, %rd301;
 	cvt.u32.u64 	%r434, %rd137;
 	mul.wide.s32 	%rd169, %r434, 2;
@@ -623,10 +623,10 @@ $L__BB0_6:                              // %.lr.ph
 	cvt.u32.u64 	%r465, %rd168;
 	mul.wide.s32 	%rd200, %r465, 2;
 	add.s64 	%rd128, %rd89, %rd200;
-	.loc	1 67 98                         // triton_spconv.py:67:98
+	.loc	1 60 98                         // implicit_gemm_kernel.py:60:98
 	add.s64 	%rd201, %rd2, %rd301;
 	setp.lt.s64 	%p94, %rd201, %rd3;
-	.loc	1 67 50                         // triton_spconv.py:67:50
+	.loc	1 60 50                         // implicit_gemm_kernel.py:60:50
 	and.pred  	%p21, %p92, %p94;
 	and.pred  	%p22, %p91, %p94;
 	and.pred  	%p23, %p90, %p94;
@@ -659,9 +659,9 @@ $L__BB0_6:                              // %.lr.ph
 	and.pred  	%p50, %p63, %p94;
 	and.pred  	%p51, %p62, %p94;
 	and.pred  	%p52, %p61, %p94;
-	.loc	1 70 54                         // triton_spconv.py:70:54
+	.loc	1 63 54                         // implicit_gemm_kernel.py:63:54
 	add.s64 	%rd202, %rd291, %rd301;
-	.loc	1 72 22                         // triton_spconv.py:72:22
+	.loc	1 65 22                         // implicit_gemm_kernel.py:65:22
 	add.s64 	%rd203, %rd2, %rd293;
 	add.s64 	%rd204, %rd2, %rd294;
 	add.s64 	%rd205, %rd2, %rd295;
@@ -669,7 +669,7 @@ $L__BB0_6:                              // %.lr.ph
 	add.s64 	%rd207, %rd2, %rd297;
 	add.s64 	%rd208, %rd2, %rd298;
 	add.s64 	%rd209, %rd2, %rd299;
-	.loc	1 70 20                         // triton_spconv.py:70:20
+	.loc	1 63 20                         // implicit_gemm_kernel.py:63:20
 	add.s64 	%rd210, %rd2, %rd300;
 	cvt.u32.u64 	%r466, %rd203;
 	mul.wide.s32 	%rd211, %r466, 2;
@@ -696,7 +696,7 @@ $L__BB0_6:                              // %.lr.ph
 	mul.wide.s32 	%rd218, %r473, 2;
 	add.s64 	%rd136, %rd91, %rd218;
 	cvt.u32.u64 	%r474, %rd202;
-	.loc	1 74 72                         // triton_spconv.py:74:72
+	.loc	1 67 72                         // implicit_gemm_kernel.py:67:72
 	setp.lt.s32 	%p95, %r474, %r19;
 	add.s32 	%r475, %r474, 4;
 	setp.lt.s32 	%p96, %r475, %r19;
@@ -712,7 +712,7 @@ $L__BB0_6:                              // %.lr.ph
 	setp.lt.s32 	%p101, %r480, %r19;
 	add.s32 	%r481, %r474, 28;
 	setp.lt.s32 	%p102, %r481, %r19;
-	.loc	1 75 20                         // triton_spconv.py:75:20
+	.loc	1 68 20                         // implicit_gemm_kernel.py:68:20
 	and.pred  	%p53, %p93, %p95;
 	and.pred  	%p54, %p93, %p96;
 	and.pred  	%p55, %p93, %p97;
@@ -722,7 +722,7 @@ $L__BB0_6:                              // %.lr.ph
 	and.pred  	%p59, %p93, %p101;
 	and.pred  	%p60, %p93, %p102;
 	mov.b16 	%rs203, 0;
-	.loc	1 78 39                         // triton_spconv.py:78:39
+	.loc	1 71 39                         // implicit_gemm_kernel.py:71:39
 	// begin inline asm
 	mov.u16 %rs202, %rs203;
 	@%p21 ld.global.b16 { %rs202 }, [ %rd97 + 0 ];
@@ -884,7 +884,7 @@ $L__BB0_6:                              // %.lr.ph
 	st.shared.u16 	[%r22+7424], %rs260;
 	st.shared.u16 	[%r21+7680], %rs262;
 	st.shared.u16 	[%r22+7936], %rs264;
-	.loc	1 79 36                         // triton_spconv.py:79:36
+	.loc	1 72 36                         // implicit_gemm_kernel.py:72:36
 	// begin inline asm
 	mov.u16 %rs266, %rs203;
 	@%p53 ld.global.b16 { %rs266 }, [ %rd129 + 0 ];
@@ -925,7 +925,7 @@ $L__BB0_6:                              // %.lr.ph
 	st.shared.u16 	[%r24+1280], %rs276;
 	st.shared.u16 	[%r23+1536], %rs278;
 	st.shared.u16 	[%r24+1792], %rs280;
-	.loc	1 78 39                         // triton_spconv.py:78:39
+	.loc	1 71 39                         // implicit_gemm_kernel.py:71:39
 	bar.sync 	0;
 	// begin inline asm
 	ldmatrix.sync.aligned.m8n8.x4.shared.b16 {%r278, %r279, %r280, %r281}, [%r238];
@@ -939,7 +939,7 @@ $L__BB0_6:                              // %.lr.ph
 	// begin inline asm
 	ldmatrix.sync.aligned.m8n8.x4.shared.b16 {%r398, %r399, %r400, %r401}, [%r253];
 	// end inline asm
-	.loc	1 79 36                         // triton_spconv.py:79:36
+	.loc	1 72 36                         // implicit_gemm_kernel.py:72:36
 	// begin inline asm
 	ldmatrix.sync.aligned.m8n8.x4.trans.shared.b16 {%r282, %r283, %r362, %r363}, [%r258];
 	// end inline asm
@@ -952,7 +952,7 @@ $L__BB0_6:                              // %.lr.ph
 	// begin inline asm
 	ldmatrix.sync.aligned.m8n8.x4.trans.shared.b16 {%r312, %r313, %r392, %r393}, [%r273];
 	// end inline asm
-	.loc	1 81 37                         // triton_spconv.py:81:37
+	.loc	1 74 37                         // implicit_gemm_kernel.py:74:37
 	mov.b32 	%r354, {%rs410, %rs411};
 	mov.b32 	%r355, {%rs412, %rs413};
 	mov.b32 	%r364, {%rs414, %rs415};
@@ -1033,7 +1033,7 @@ $L__BB0_6:                              // %.lr.ph
 	mov.b32 	{%rs436, %rs437}, %r415;
 	mov.b32 	{%rs438, %rs439}, %r424;
 	mov.b32 	{%rs440, %rs441}, %r425;
-	.loc	1 63 28                         // triton_spconv.py:63:28
+	.loc	1 56 28                         // implicit_gemm_kernel.py:56:28
 	add.s64 	%rd302, %rd302, -1;
 	add.s64 	%rd301, %rd301, 32;
 	add.s64 	%rd300, %rd300, %rd9;
@@ -1048,13 +1048,13 @@ $L__BB0_6:                              // %.lr.ph
 	@%p103 bra 	$L__BB0_6;
 	bra.uni 	$L__BB0_7;
 $L__BB0_1:                              // %.._crit_edge_crit_edge
-	.loc	1 84 31                         // triton_spconv.py:84:31
+	.loc	1 77 31                         // implicit_gemm_kernel.py:77:31
 	shr.u32 	%r671, %r3, 5;
-	.loc	1 86 19                         // triton_spconv.py:86:19
+	.loc	1 79 19                         // implicit_gemm_kernel.py:79:19
 	shl.b32 	%r118, %r1, 5;
-	.loc	1 85 10                         // triton_spconv.py:85:10
+	.loc	1 78 10                         // implicit_gemm_kernel.py:78:10
 	or.b32  	%r670, %r118, %r4;
-	.loc	1 92 56                         // triton_spconv.py:92:56
+	.loc	1 85 56                         // implicit_gemm_kernel.py:85:56
 	shr.u32 	%r119, %r3, 1;
 	and.b32  	%r669, %r119, 48;
 	mov.b16 	%rs410, 0;
@@ -1090,11 +1090,11 @@ $L__BB0_1:                              // %.._crit_edge_crit_edge
 	mov.u16 	%rs440, %rs410;
 	mov.u16 	%rs441, %rs410;
 $L__BB0_8:                              // %._crit_edge
-	.loc	1 84 31                         // triton_spconv.py:84:31
+	.loc	1 77 31                         // implicit_gemm_kernel.py:77:31
 	and.b32  	%r514, %r671, 1;
 	shr.u32 	%r515, %r6, 5;
 	or.b32  	%r516, %r514, %r515;
-	.loc	1 84 42                         // triton_spconv.py:84:42
+	.loc	1 77 42                         // implicit_gemm_kernel.py:77:42
 	or.b32  	%r517, %r516, %r8;
 	or.b32  	%r518, %r517, 4;
 	or.b32  	%r519, %r517, 8;
@@ -1127,7 +1127,7 @@ $L__BB0_8:                              // %._crit_edge
 	or.b32  	%r546, %r517, 116;
 	or.b32  	%r547, %r517, 120;
 	or.b32  	%r548, %r517, 124;
-	.loc	1 84 61                         // triton_spconv.py:84:61
+	.loc	1 77 61                         // implicit_gemm_kernel.py:77:61
 	mul.lo.s32 	%r549, %r517, %r106;
 	shl.b32 	%r550, %r106, 2;
 	add.s32 	%r551, %r549, %r550;
@@ -1161,7 +1161,7 @@ $L__BB0_8:                              // %._crit_edge
 	add.s32 	%r579, %r578, %r550;
 	add.s32 	%r580, %r579, %r550;
 	add.s32 	%r581, %r580, %r550;
-	.loc	1 86 10                         // triton_spconv.py:86:10
+	.loc	1 79 10                         // implicit_gemm_kernel.py:79:10
 	add.s32 	%r582, %r670, %r549;
 	add.s32 	%r583, %r670, %r551;
 	add.s32 	%r584, %r670, %r552;
@@ -1194,7 +1194,7 @@ $L__BB0_8:                              // %._crit_edge
 	add.s32 	%r611, %r670, %r579;
 	add.s32 	%r612, %r670, %r580;
 	add.s32 	%r613, %r670, %r581;
-	.loc	1 84 8                          // triton_spconv.py:84:8
+	.loc	1 77 8                          // implicit_gemm_kernel.py:77:8
 	mul.wide.s32 	%rd251, %r582, 2;
 	add.s64 	%rd219, %rd92, %rd251;
 	mul.wide.s32 	%rd252, %r583, 2;
@@ -1259,7 +1259,7 @@ $L__BB0_8:                              // %._crit_edge
 	add.s64 	%rd249, %rd92, %rd281;
 	mul.wide.s32 	%rd282, %r613, 2;
 	add.s64 	%rd250, %rd92, %rd282;
-	.loc	1 88 67                         // triton_spconv.py:88:67
+	.loc	1 81 67                         // implicit_gemm_kernel.py:81:67
 	setp.lt.s32 	%p169, %r517, %r104;
 	setp.lt.s32 	%p170, %r518, %r104;
 	setp.lt.s32 	%p171, %r519, %r104;
@@ -1292,9 +1292,9 @@ $L__BB0_8:                              // %._crit_edge
 	setp.lt.s32 	%p198, %r546, %r104;
 	setp.lt.s32 	%p199, %r547, %r104;
 	setp.lt.s32 	%p200, %r548, %r104;
-	.loc	1 89 62                         // triton_spconv.py:89:62
+	.loc	1 82 62                         // implicit_gemm_kernel.py:82:62
 	setp.lt.s32 	%p201, %r670, %r106;
-	.loc	1 89 8                          // triton_spconv.py:89:8
+	.loc	1 82 8                          // implicit_gemm_kernel.py:82:8
 	and.pred  	%p137, %p169, %p201;
 	and.pred  	%p138, %p170, %p201;
 	and.pred  	%p139, %p171, %p201;
@@ -1327,7 +1327,7 @@ $L__BB0_8:                              // %._crit_edge
 	and.pred  	%p166, %p198, %p201;
 	and.pred  	%p167, %p199, %p201;
 	and.pred  	%p168, %p200, %p201;
-	.loc	1 92 56                         // triton_spconv.py:92:56
+	.loc	1 85 56                         // implicit_gemm_kernel.py:85:56
 	bar.sync 	0;
 	shl.b32 	%r614, %r3, 7;
 	and.b32  	%r615, %r614, 384;
@@ -1625,14 +1625,14 @@ $L__BB0_8:                              // %._crit_edge
 	// begin inline asm
 	@%p168 st.global.b16 [ %rd250 + 0 ], { %rs345 };
 	// end inline asm
-	.loc	1 92 4                          // triton_spconv.py:92:4
+	.loc	1 85 4                          // implicit_gemm_kernel.py:85:4
 	ret;
 $L__tmp7:
 $L__func_end0:
                                         // -- End function
 }
-	.file	1 "/home/waabi-user/sparse-conv/triton_spconv.py"
-	.file	2 "/home/waabi-user/.local/lib/python3.10/site-packages/triton/language/standard.py"
+	.file	1 "/home/allan/Programs/sparse-conv/implicit_gemm_kernel.py"
+	.file	2 "/home/allan/anaconda3/envs/ml/lib/python3.10/site-packages/triton/language/standard.py"
 	.section	.debug_abbrev
 	{
 .b8 1                                   // Abbreviation Code
@@ -1691,12 +1691,12 @@ $L__func_end0:
 	}
 	.section	.debug_info
 	{
-.b32 163                                // Length of Unit
+.b32 174                                // Length of Unit
 .b8 2                                   // DWARF version number
 .b8 0
 .b32 .debug_abbrev                      // Offset Into Abbrev. Section
 .b8 8                                   // Address Size (in bytes)
-.b8 1                                   // Abbrev [1] 0xb:0x9c DW_TAG_compile_unit
+.b8 1                                   // Abbrev [1] 0xb:0xa7 DW_TAG_compile_unit
 .b8 116                                 // DW_AT_producer
 .b8 114
 .b8 105
@@ -1706,19 +1706,26 @@ $L__func_end0:
 .b8 0
 .b8 2                                   // DW_AT_language
 .b8 0
-.b8 116                                 // DW_AT_name
-.b8 114
+.b8 105                                 // DW_AT_name
+.b8 109
+.b8 112
+.b8 108
+.b8 105
+.b8 99
 .b8 105
 .b8 116
-.b8 111
-.b8 110
 .b8 95
-.b8 115
-.b8 112
-.b8 99
-.b8 111
+.b8 103
+.b8 101
+.b8 109
+.b8 109
+.b8 95
+.b8 107
+.b8 101
+.b8 114
 .b8 110
-.b8 118
+.b8 101
+.b8 108
 .b8 46
 .b8 112
 .b8 121
@@ -1730,16 +1737,20 @@ $L__func_end0:
 .b8 109
 .b8 101
 .b8 47
-.b8 119
 .b8 97
+.b8 108
+.b8 108
 .b8 97
-.b8 98
-.b8 105
-.b8 45
-.b8 117
-.b8 115
-.b8 101
+.b8 110
+.b8 47
+.b8 80
 .b8 114
+.b8 111
+.b8 103
+.b8 114
+.b8 97
+.b8 109
+.b8 115
 .b8 47
 .b8 115
 .b8 112
@@ -1753,7 +1764,7 @@ $L__func_end0:
 .b8 110
 .b8 118
 .b8 0
-.b8 2                                   // Abbrev [2] 0x47:0x19 DW_TAG_subprogram
+.b8 2                                   // Abbrev [2] 0x52:0x19 DW_TAG_subprogram
 .b8 105                                 // DW_AT_name
 .b8 109
 .b8 112
@@ -1778,23 +1789,23 @@ $L__func_end0:
 .b8 108
 .b8 0
 .b8 1                                   // DW_AT_inline
-.b8 3                                   // Abbrev [3] 0x60:0x46 DW_TAG_subprogram
+.b8 3                                   // Abbrev [3] 0x6b:0x46 DW_TAG_subprogram
 .b64 $L__func_begin0                    // DW_AT_low_pc
 .b64 $L__func_end0                      // DW_AT_high_pc
-.b32 71                                 // DW_AT_abstract_origin
-.b8 4                                   // Abbrev [4] 0x75:0x18 DW_TAG_inlined_subroutine
-.b32 71                                 // DW_AT_abstract_origin
+.b32 82                                 // DW_AT_abstract_origin
+.b8 4                                   // Abbrev [4] 0x80:0x18 DW_TAG_inlined_subroutine
+.b32 82                                 // DW_AT_abstract_origin
 .b64 $L__tmp1                           // DW_AT_low_pc
 .b64 $L__tmp2                           // DW_AT_high_pc
 .b8 1                                   // DW_AT_call_file
-.b8 48                                  // DW_AT_call_line
+.b8 41                                  // DW_AT_call_line
 .b8 30                                  // DW_AT_call_column
-.b8 4                                   // Abbrev [4] 0x8d:0x18 DW_TAG_inlined_subroutine
-.b32 71                                 // DW_AT_abstract_origin
+.b8 4                                   // Abbrev [4] 0x98:0x18 DW_TAG_inlined_subroutine
+.b32 82                                 // DW_AT_abstract_origin
 .b64 $L__tmp3                           // DW_AT_low_pc
 .b64 $L__tmp6                           // DW_AT_high_pc
 .b8 1                                   // DW_AT_call_file
-.b8 62                                  // DW_AT_call_line
+.b8 55                                  // DW_AT_call_line
 .b8 50                                  // DW_AT_call_column
 .b8 0                                   // End Of Children Mark
 .b8 0                                   // End Of Children Mark

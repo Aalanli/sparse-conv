@@ -26,8 +26,8 @@ class Conv3DImplicitGemmKernel {
     bool div_d;
     bool div_dp;
     std::string dtype; // "fp16", "fp32"
-
     
+    bool valid;
     CUmodule mod;
     CUfunction func;
 public: 
@@ -53,6 +53,20 @@ public:
 
     std::string get_dtype() const {
         return dtype;
+    }
+
+    bool can_run(
+        int N,
+        int NPrime,
+        int D,
+        int DPrime,
+        int K,
+        std::string dtype
+    ) const {
+        return valid && (dtype == this->dtype) &&
+               (!div_k || K % 16 == 0) &&
+               (!div_d || D % 16 == 0) &&
+               (!div_dp || DPrime % 16 == 0);
     }
 };
 

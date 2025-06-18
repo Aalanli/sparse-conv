@@ -13,12 +13,8 @@ def init_kernels():
     init = True
 
 
-def num_kernels() -> int:
-    init_kernels()
-    return torch.ops.conv3d_implicit_gemm.get_num_kernels()
-
-def conv3d_implicit_gemm(input: Tensor, indices: Tensor, weight: Tensor, kernel_size: int, kernel_idx: int) -> Tensor:
+def conv3d_implicit_gemm(input: Tensor, indices: Tensor, weight: Tensor, kernel_size: int) -> Tensor:
     init_kernels()
     return torch.ops.conv3d_implicit_gemm.conv3d_implicit_gemm_torch(
-        input, indices, weight, kernel_size, kernel_idx
+        input, indices, weight, kernel_size
     )

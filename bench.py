@@ -81,14 +81,13 @@ class Conv3DSubmAot(ImplBase):
             torch.randn(kernel_size**3, in_channels, out_channels, device='cuda', dtype=torch.float16)
         )
         self.kernel_size = kernel_size
-        self.num_kernels = ops.conv3d_implicit_gemm.num_kernels()       
 
     def forward(self, feats, coords, spatial_range):
         # coords: [N, 4] where last dimension is (x, y, z, batch_id)
         # feats: [N, D]
         indices = ops.idx_gen.gen_conv3d_subm_indices(coords, self.kernel_size)
         return ops.conv3d_implicit_gemm.conv3d_implicit_gemm(
-            feats, indices, self.weight, self.kernel_size, self.num_kernels - 1
+            feats, indices, self.weight, self.kernel_size
         )
 
 
@@ -164,9 +163,9 @@ def plot_results(all_results, Ns, Ds, out_file='benchmark.png'):
             plt.plot(Ns, results[D], marker='o', label=f"{impl_name}-D{D}")
     plt.xlabel('Sequence length N')
     plt.ylabel('Avg execution time (ms)')
-    # plt.xscale('log')
-    # plt.yscale('log')
-    plt.title('SubM 3D Sparse Conv Benchmark')
+    sm_version = torch.cuda.get_device_capability()
+
+    plt.title(f'SubM 3D Sparse Conv Benchmark, SM{sm_version[0]}{sm_version[1]}' )
     plt.legend()
     plt.grid(True)
     plt.savefig(out_file)
@@ -179,6 +178,7 @@ def main():
     parser.add_argument('--Ds', type=int, nargs='+', default=[32, 64])
     parser.add_argument('--runs', type=int, default=50)
     parser.add_argument('--warmup', type=int, default=10)
+    parser.add_argument('--plot_file', type=str, default='benchmark.png')
     args = parser.parse_args()
 
     # list of implementations
@@ -190,31 +190,13 @@ def main():
             impl, args.Ns, args.Ds,
             warmup=args.warmup, runs=args.runs
         )
-    all_results['implicit_gemm'] = benchmark_impl(
-        ImplicitGemm, args.Ns, args.Ds,
-        warmup=args.warmup, runs=args.runs
-    )
+    # all_results['implicit_gemm'] = benchmark_impl(
+    #     ImplicitGemm, args.Ns, args.Ds,
+    #     warmup=args.warmup, runs=args.runs
+    # )
 
-    plot_results(all_results, args.Ns, args.Ds, out_file='benchmark.png')
+    plot_results(all_results, args.Ns, args.Ds, out_file=args.plot_file)
 
 
 if __name__ == '__main__':
     main()
-
-# benchmark_impl(ImplicitGemm, [1000, 5000, 10000, 50000, 100000, 200000, 300000, 400000], [16, 32, 64, 128], 10, 50)
-
-# from triton_spconv import implicit_conv3d_kernel
-
-# # cache = implicit_conv3d_kernel.fn.device_caches[0]
-# # sigs = list(cache[0].items())
-# # print(sigs[0])
-
-# configs = implicit_conv3d_kernel.cache
-# for c, sig in configs.items():
-#     print(f"Config: {c}")
-#     print(f"Signature: {sig}")
-
-# # %%
-# s = set([str(b) for b in implicit_conv3d_kernel.cache.values()])
-# for i in s:
-#     print(i)
