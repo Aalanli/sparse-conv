@@ -1,4 +1,4 @@
-#Copyright(c) 2021 Waabi Innovation.All rights reserved.
+# Copyright (c) 2021 Waabi Innovation. All rights reserved.
 from typing import List
 
 import torch

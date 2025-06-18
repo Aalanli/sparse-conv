@@ -1,4 +1,4 @@
-#% %
+# %%
 from pathlib import Path
 import torch
 import logging
@@ -10,3 +10,4 @@ for lib in build_dir.iterdir():
         for file in lib.glob("*.so"):
             logging.info(f"Loading custom op: {file}")
             torch.ops.load_library(file)
+
