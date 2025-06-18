@@ -4,8 +4,8 @@ from typing import List
 import torch
 from torch import Tensor
 
-def gen_conv3d_subm_indices(coords: Tensor, kernel_size: int = 3, hash_map_multiplier: float = 8.0) -> Tensor:
-    return torch.ops.convIdx.generate_conv3d_subm_indices(coords, kernel_size, hash_map_multiplier)
+def gen_conv3d_subm_indices(coords: Tensor, kernel_size: int = 3, hash_map_multiplier: float = 4.0, threads: int = 128, lookup_tries: int = 32) -> Tensor:
+    return torch.ops.convIdx.generate_conv3d_subm_indices(coords, kernel_size, hash_map_multiplier, threads, lookup_tries)
 
 
 def gen_conv3d_indices(
@@ -14,7 +14,9 @@ def gen_conv3d_indices(
     kernel_size: int = 3,
     stride: int | List[int] = 1,
     padding: int | List[int] = 0,
-    hash_map_multiplier: float = 8.0,
+    hash_map_multiplier: float = 2.0,
+    threads: int = 256,
+    lookup_tries: int = 128
 ) -> tuple[Tensor, Tensor]:
     """
     Generate indices for 3D sparse convolution.
@@ -58,4 +60,6 @@ def gen_conv3d_indices(
         max_y,
         max_z,
         hash_map_multiplier,
+        threads,
+        lookup_tries
     )

@@ -1,5 +1,6 @@
 # %%
 import time
+import glob
 import ops
 import argparse
 
@@ -32,6 +33,15 @@ def generate_random_coords(N, max_coord=50, batch_size=2, device='cuda'):
     xyz = torch.randint(0, max_coord, (N, 3), device=device)
     return torch.cat([batch, xyz], dim=1).int()
 
+
+def get_voxel_coords(max_seq: int, device='cuda'):
+    coords = []
+    for f in glob.glob('example_pts/*.pt'):
+        data = torch.load(f, map_location=device)
+        coords.append(data)
+
+    coords = torch.cat(coords, dim=0)
+    return coords[:max_seq].int()
 
 class ImplBase:
     name = 'base'
@@ -125,9 +135,8 @@ class NaiveConv3D(ImplBase):
 
 def benchmark_impl(impl_cls: type[ImplBase], Ns, Ds, warmup=10, runs=50, device='cuda', dtype=torch.float16):
     results = {D: [] for D in Ds}
-    batch = 1
-    max_coord = 1024
-    spatial_range = [batch, max_coord, max_coord, max_coord]
+    vox_coords = get_voxel_coords(max_seq=max(Ns), device=device)
+    spatial_range = (vox_coords.max(dim=0).values + 1).tolist()  # [batch_size, x, y, z]
 
     with torch.autocast(device_type=device, dtype=torch.float16):
         for D in Ds:
@@ -136,7 +145,8 @@ def benchmark_impl(impl_cls: type[ImplBase], Ns, Ds, warmup=10, runs=50, device=
             for N in Ns:
                 # generate data
                 feats = torch.randn(N, D, device=device, dtype=dtype)
-                coords = generate_random_coords(N, max_coord=max_coord, batch_size=batch, device=device)
+                # coords = generate_random_coords(N, max_coord=max_coord, batch_size=batch, device=device)
+                coords = vox_coords[:N]
                 # warmup
                 for _ in range(warmup):
                     _ = impl.forward(feats, coords, spatial_range)
