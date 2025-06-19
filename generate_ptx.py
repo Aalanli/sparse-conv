@@ -74,7 +74,7 @@ def get_divisibility(div_k: bool, div_d: bool, div_dp: bool):
 Config = namedtuple('Config', ['BLOCK_N', 'BLOCK_K', 'BLOCK_Dp', 'num_warps', 'num_stages', 'parallel_k', 'div_k', 'div_d', 'div_dp', 'acc_dtype', 'dtype', 'sm'])
 
 
-def load_configs(div_k: bool = False, div_d: bool = True, div_dp: bool = True):
+def load_configs(div_k: bool = False, div_d: bool = True, div_dp: bool = True, pk: int = 1):
     params = set()
     for file in Path(__file__).parent.glob('tuning_configs/*.json'):
         with open(file, 'r') as f:
@@ -87,7 +87,7 @@ def load_configs(div_k: bool = False, div_d: bool = True, div_dp: bool = True):
                         BLOCK_Dp=kv['BLOCK_Dp'],
                         num_warps=kv['num_warps'],
                         num_stages=kv['num_stages'],
-                        parallel_k=kv['PARALLEL_K'],
+                        parallel_k=pk,
                         div_k=div_k,
                         div_d=div_d,
                         div_dp=div_dp,
@@ -155,8 +155,10 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     configs = list()
-    configs.extend(load_configs(div_k=False, div_d=True, div_dp=True)) # fully divisible
-    configs.extend(load_configs(div_k=False, div_d=False, div_dp=False)) # not divisible
+    configs.extend(load_configs(div_k=False, div_d=True,  div_dp=True , pk=1)) # fully divisible
+    configs.extend(load_configs(div_k=False, div_d=False, div_dp=False, pk=1)) # not divisible
+    configs.extend(load_configs(div_k=False, div_d=True,  div_dp=True , pk=2)) # fully divisible
+    configs.extend(load_configs(div_k=False, div_d=False, div_dp=False, pk=2)) # not divisible
     
     generate_ptx_from_configs(configs, output_path=args.output, ptx_version=args.ptx_version)
 
