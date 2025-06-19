@@ -8,6 +8,8 @@ import triton.language as tl
 from collections import namedtuple
 import argparse
 
+from pathlib import Path
+
 def generate_ptx(
     mod: triton.JITFunction,
     signature: dict[str, str],
@@ -52,6 +54,7 @@ def get_sig(dtype: str):
         'BLOCK_K': 'constexpr',
         'BLOCK_Dp': 'constexpr',
         'acc_dtype': 'constexpr',
+        'PARALLEL_K': 'constexpr',
     }
     return sig
 
@@ -68,43 +71,35 @@ def get_divisibility(div_k: bool, div_d: bool, div_dp: bool):
         divisibility[8] = 16 # K
     return divisibility
 
-Config = namedtuple('Config', ['block_sizes', 'num_warps', 'num_stages', 'div_k', 'div_d', 'div_dp', 'dtype', 'sm'])
+Config = namedtuple('Config', ['BLOCK_N', 'BLOCK_K', 'BLOCK_Dp', 'num_warps', 'num_stages', 'parallel_k', 'div_k', 'div_d', 'div_dp', 'acc_dtype', 'dtype', 'sm'])
 
+
+def load_configs(div_k: bool = False, div_d: bool = True, div_dp: bool = True):
+    params = set()
+    for file in Path(__file__).parent.glob('tuning_configs/*.json'):
+        with open(file, 'r') as f:
+            data = json.load(f)
+            for kv in data:
+                params.add(
+                    Config(
+                        BLOCK_N=kv['BLOCK_N'],
+                        BLOCK_K=kv['BLOCK_K'],
+                        BLOCK_Dp=kv['BLOCK_Dp'],
+                        num_warps=kv['num_warps'],
+                        num_stages=kv['num_stages'],
+                        parallel_k=kv['PARALLEL_K'],
+                        div_k=div_k,
+                        div_d=div_d,
+                        div_dp=div_dp,
+                        acc_dtype=kv['acc_dtype'],
+                        dtype=kv['dtype'],
+                        sm=kv["sm"]
+                    )
+                )
+    return params
 
 
 from implicit_gemm_kernel import implicit_conv3d_kernel
-
-def make_configs(sm: int, dtype: str):
-    return [
-        Config({"BLOCK_N": 32, "BLOCK_K": 16, "BLOCK_Dp": 16}, num_warps=2, num_stages=2, div_k=False, div_d=True,  div_dp=True, dtype=dtype, sm=sm),
-        Config({"BLOCK_N": 16, "BLOCK_K": 16, "BLOCK_Dp": 16}, num_warps=2, num_stages=2, div_k=False, div_d=True,  div_dp=True, dtype=dtype, sm=sm),
-        Config({"BLOCK_N": 16, "BLOCK_K": 32, "BLOCK_Dp": 64}, num_warps=4, num_stages=3, div_k=False, div_d=True,  div_dp=True, dtype=dtype, sm=sm),
-        Config({"BLOCK_N": 32, "BLOCK_K": 32, "BLOCK_Dp": 16}, num_warps=2, num_stages=2, div_k=False, div_d=True,  div_dp=True, dtype=dtype, sm=sm),
-        Config({"BLOCK_N": 16, "BLOCK_K": 32, "BLOCK_Dp": 128},num_warps=8, num_stages=3, div_k=False, div_d=True,  div_dp=True, dtype=dtype, sm=sm),
-        Config({"BLOCK_N": 128, "BLOCK_K": 32, "BLOCK_Dp": 32},num_warps=4, num_stages=2, div_k=False, div_d=True,  div_dp=True, dtype=dtype, sm=sm),
-        Config({"BLOCK_N": 16, "BLOCK_K": 64, "BLOCK_Dp": 64}, num_warps=4, num_stages=3, div_k=False, div_d=True,  div_dp=True, dtype=dtype, sm=sm),
-        Config({"BLOCK_N": 16, "BLOCK_K": 32, "BLOCK_Dp": 32}, num_warps=2, num_stages=2, div_k=False, div_d=True,  div_dp=True, dtype=dtype, sm=sm),
-        Config({"BLOCK_N": 32, "BLOCK_K": 16, "BLOCK_Dp": 32}, num_warps=2, num_stages=2, div_k=False, div_d=True,  div_dp=True, dtype=dtype, sm=sm),
-        Config({"BLOCK_N": 32, "BLOCK_K": 16, "BLOCK_Dp": 16}, num_warps=2, num_stages=2, div_k=False, div_d=False, div_dp=True, dtype=dtype, sm=sm),
-        Config({"BLOCK_N": 16, "BLOCK_K": 16, "BLOCK_Dp": 16}, num_warps=2, num_stages=2, div_k=False, div_d=False, div_dp=True, dtype=dtype, sm=sm),
-        Config({"BLOCK_N": 16, "BLOCK_K": 32, "BLOCK_Dp": 64}, num_warps=4, num_stages=3, div_k=False, div_d=False, div_dp=True, dtype=dtype, sm=sm),
-        Config({"BLOCK_N": 32, "BLOCK_K": 32, "BLOCK_Dp": 16}, num_warps=2, num_stages=2, div_k=False, div_d=False, div_dp=True, dtype=dtype, sm=sm),
-        Config({"BLOCK_N": 16, "BLOCK_K": 32, "BLOCK_Dp": 128},num_warps=8, num_stages=3, div_k=False, div_d=False, div_dp=True, dtype=dtype, sm=sm),
-        Config({"BLOCK_N": 128, "BLOCK_K": 32, "BLOCK_Dp": 32},num_warps=4, num_stages=2, div_k=False, div_d=False, div_dp=True, dtype=dtype, sm=sm),
-        Config({"BLOCK_N": 16, "BLOCK_K": 64, "BLOCK_Dp": 64}, num_warps=4, num_stages=3, div_k=False, div_d=False, div_dp=True, dtype=dtype, sm=sm),
-        Config({"BLOCK_N": 16, "BLOCK_K": 32, "BLOCK_Dp": 32}, num_warps=2, num_stages=2, div_k=False, div_d=False, div_dp=True, dtype=dtype, sm=sm),
-        Config({"BLOCK_N": 32, "BLOCK_K": 16, "BLOCK_Dp": 32}, num_warps=2, num_stages=2, div_k=False, div_d=False, div_dp=True, dtype=dtype, sm=sm),
-        Config({"BLOCK_N": 32, "BLOCK_K": 16, "BLOCK_Dp": 16}, num_warps=2, num_stages=2, div_k=False, div_d=False, div_dp=False, dtype=dtype, sm=sm),
-        Config({"BLOCK_N": 16, "BLOCK_K": 16, "BLOCK_Dp": 16}, num_warps=2, num_stages=2, div_k=False, div_d=False, div_dp=False, dtype=dtype, sm=sm),
-        Config({"BLOCK_N": 16, "BLOCK_K": 32, "BLOCK_Dp": 64}, num_warps=4, num_stages=3, div_k=False, div_d=False, div_dp=False, dtype=dtype, sm=sm),
-        Config({"BLOCK_N": 32, "BLOCK_K": 32, "BLOCK_Dp": 16}, num_warps=2, num_stages=2, div_k=False, div_d=False, div_dp=False, dtype=dtype, sm=sm),
-        Config({"BLOCK_N": 16, "BLOCK_K": 32, "BLOCK_Dp": 128},num_warps=8, num_stages=3, div_k=False, div_d=False, div_dp=False, dtype=dtype, sm=sm),
-        Config({"BLOCK_N": 128, "BLOCK_K": 32, "BLOCK_Dp": 32},num_warps=4, num_stages=2, div_k=False, div_d=False, div_dp=False, dtype=dtype, sm=sm),
-        Config({"BLOCK_N": 16, "BLOCK_K": 64, "BLOCK_Dp": 64}, num_warps=4, num_stages=3, div_k=False, div_d=False, div_dp=False, dtype=dtype, sm=sm),
-        Config({"BLOCK_N": 16, "BLOCK_K": 32, "BLOCK_Dp": 32}, num_warps=2, num_stages=2, div_k=False, div_d=False, div_dp=False, dtype=dtype, sm=sm),
-        Config({"BLOCK_N": 32, "BLOCK_K": 16, "BLOCK_Dp": 32}, num_warps=2, num_stages=2, div_k=False, div_d=False, div_dp=False, dtype=dtype, sm=sm),
-    ]
-
 
 def generate_ptx_from_config(config: Config, output_name: str = 'kernel.ptx', ptx_version: int | None = None):
     signature = get_sig(config.dtype)
@@ -113,10 +108,11 @@ def generate_ptx_from_config(config: Config, output_name: str = 'kernel.ptx', pt
         'fp32': tl.float32,
     }
     constexprs = {
-        'BLOCK_N': config.block_sizes['BLOCK_N'],
-        'BLOCK_K': config.block_sizes['BLOCK_K'],
-        'BLOCK_Dp': config.block_sizes['BLOCK_Dp'],
+        'BLOCK_N': config.BLOCK_N,
+        'BLOCK_K': config.BLOCK_K,
+        'BLOCK_Dp': config.BLOCK_Dp,
         'acc_dtype': dtype_to_triton[config.dtype],
+        'PARALLEL_K': config.parallel_k,
     }
     divisibility = get_divisibility(config.div_k, config.div_d, config.div_dp)
 
@@ -154,14 +150,13 @@ def generate_ptx_from_configs(configs: list[Config], output_path: str = 'kernel_
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Generate PTX files for implicit_conv3d_kernel with various configs.")
-    parser.add_argument('--sm', type=int, nargs='+', required=True, help='CUDA SM version(s) (e.g., 80 86 89)')
-    parser.add_argument('--dtype', type=str, nargs='+', choices=['fp16', 'fp32'], required=True, help='Data type(s) for kernel')
     parser.add_argument('--output', type=str, default='kernel_ptx', help='Output directory for PTX files')
     parser.add_argument('--ptx_version', type=int, default=None, help='PTX version to use (optional)')
     args = parser.parse_args()
 
-    configs = []
-    for sm in args.sm:
-        for dtype in args.dtype:
-            configs.extend(make_configs(int(sm), args.dtype[0]))
+    configs = list()
+    configs.extend(load_configs(div_k=False, div_d=True, div_dp=True)) # fully divisible
+    configs.extend(load_configs(div_k=False, div_d=False, div_dp=False)) # not divisible
+    
     generate_ptx_from_configs(configs, output_path=args.output, ptx_version=args.ptx_version)
+
