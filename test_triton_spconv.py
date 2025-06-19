@@ -60,27 +60,3 @@ def test():
     compare_conv3d_subm(idx, 64, 64, 3)
     compare_conv3d_subm(idx, 128, 128, 3)
     compare_conv3d_subm(idx, 64, 128, 3)
-
-def print_cache(N, dim_in, dim_out, kernel_size, dtype, acc_dtype):
-
-    coords = get_voxel_coords(N, device='cuda')
-    n = coords.shape[0]
-    feats = torch.randn(n, dim_in, device="cuda", dtype=dtype)
-    weights = torch.randn(kernel_size ** 3, dim_in, dim_out, device="cuda", dtype=dtype) / dim_in**0.5
-    indices = ops.idx_gen.gen_conv3d_subm_indices(coords, kernel_size)
-
-    out = conv3d_implicit_gemm(feats, indices, weights, kernel_size, acc_dtype=acc_dtype)
-
-    for k, v in implicit_conv3d_kernel.cache.items():
-        print({"N": N, "D": dim_in, "D_prime": dim_out, "K": kernel_size**3, "dtype": dtype, "acc_dtype": acc_dtype})
-        print(f"{v.kwargs}, num_warps: {v.num_warps}, num_stages: {v.num_stages}")
-    
-    implicit_conv3d_kernel.cache.clear()
-
-for N in [5000, 10_000, 100_000, 400_000]:
-    print_cache(N, 16, 16, 3, torch.float16, tl.float32)
-    print_cache(N, 16, 32, 3, torch.float16, tl.float32)
-    print_cache(N, 32, 32, 3, torch.float16, tl.float32)
-    print_cache(N, 32, 64, 3, torch.float16, tl.float32)
-    print_cache(N, 64, 64, 3, torch.float16, tl.float32)
-
