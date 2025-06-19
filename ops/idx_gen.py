@@ -20,6 +20,7 @@ def gen_conv3d_indices(
 ) -> tuple[Tensor, Tensor]:
     """
     Generate indices for 3D sparse convolution.
+    Returns new_coords and indices.
 
     Note: this function does not match torchsparse behavior for stride = 1 or 1 in stride. This is I think a bug in torchsparse
         For example, (simplified to 1D case):

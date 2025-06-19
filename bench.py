@@ -6,6 +6,7 @@ import argparse
 
 import torch
 import matplotlib.pyplot as plt
+import triton.testing
 
 # Import implementations
 try:
@@ -103,6 +104,8 @@ class Conv3DSubmAot(ImplBase):
 
 import ops.idx_gen
 from triton_spconv import Conv3DSubmModule
+import pandas as pd
+from tabulate import tabulate
 class ImplicitGemm(ImplBase):
     name = 'implicit_gemm'
 
@@ -147,21 +150,19 @@ def benchmark_impl(impl_cls: type[ImplBase], Ns, Ds, warmup=10, runs=50, device=
                 feats = torch.randn(N, D, device=device, dtype=dtype)
                 # coords = generate_random_coords(N, max_coord=max_coord, batch_size=batch, device=device)
                 coords = vox_coords[:N]
-                # warmup
-                for _ in range(warmup):
-                    _ = impl.forward(feats, coords, spatial_range)
-                # timed runs
-                starter, ender = torch.cuda.Event(enable_timing=True), torch.cuda.Event(enable_timing=True)
-                torch.cuda.synchronize()
                 
+                torch.cuda.synchronize() 
                 torch.cuda.nvtx.range_push(f"Benchmark {impl.name} D={D} N={N}")
-                starter.record()
-                for _ in range(runs):
+                for _ in range(3):
                     _ = impl.forward(feats, coords, spatial_range)
-                ender.record()
                 torch.cuda.synchronize()
                 torch.cuda.nvtx.range_pop()
-                elapsed = starter.elapsed_time(ender) / runs  # ms per run
+                torch.cuda.nvtx.range_push(f"Benchmark {impl.name} D={D} N={N} benchmarks")
+                elapsed = triton.testing.do_bench(
+                    lambda: impl.forward(feats, coords, spatial_range),
+                    warmup=warmup, rep=runs
+                )
+                torch.cuda.nvtx.range_pop()
                 results[D].append(elapsed)
                 print(f"Impl={impl.name}, D={D}, N={N}, time={elapsed:.3f} ms")
     return results
@@ -185,14 +186,14 @@ def plot_results(all_results, Ns, Ds, out_file='benchmark.png'):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--Ns', type=int, nargs='+', default=[1000, 5000, 10000, 50000, 100000, 200000, 300000, 400000])
-    parser.add_argument('--Ds', type=int, nargs='+', default=[32, 64])
+    parser.add_argument('--Ds', type=int, nargs='+', default=[32])
     parser.add_argument('--runs', type=int, default=50)
     parser.add_argument('--warmup', type=int, default=10)
     parser.add_argument('--plot_file', type=str, required=False, default=None)
     args = parser.parse_args()
 
     # list of implementations
-    implementations = [SpconvSubM, TorchsparseSubM, Conv3DSubmAot]
+    implementations = [SpconvSubM, TorchsparseSubM, ImplicitGemm, Conv3DSubmAot]
 
     all_results = {}
     for impl in implementations:
@@ -206,6 +207,15 @@ def main():
     # )
     if args.plot_file is not None:
         plot_results(all_results, args.Ns, args.Ds, out_file=args.plot_file)
+    
+    for D in args.Ds:
+        print(f"Results for D={D}:")
+        # Build a table: rows indexed by N, columns by implementation name
+        data = {impl_name: results[D] for impl_name, results in all_results.items()}
+        df = pd.DataFrame(data, index=args.Ns)
+        df.index.name = 'N'
+        print(tabulate(df, headers='keys', tablefmt='psql'))
+        print("")
 
 
 if __name__ == '__main__':

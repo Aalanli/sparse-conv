@@ -6,12 +6,11 @@ import torch
 
 import ops.conv3d_implicit_gemm as aot_implicit_gemm
 import ops.idx_gen
+import triton.language as tl
 from triton_spconv import conv3d_implicit_gemm
+from implicit_gemm_kernel import implicit_conv3d_kernel
+from utils import get_voxel_coords
 
-voxel_data = []
-# for p in glob.glob(os.path.expanduser('~/voxel_data/*.pt')):
-#     with open(p, 'rb') as f:
-#         voxel_data.append(torch.load(f))
 
 def reference_conv3d_subm(feats: torch.Tensor, indices: torch.Tensor, weights: torch.Tensor, kernel_size: int):
     n = feats.shape[0]
@@ -22,15 +21,17 @@ def reference_conv3d_subm(feats: torch.Tensor, indices: torch.Tensor, weights: t
 
 def compare_conv3d_subm(coords, dim_in, dim_out, kernel_size):
     n = coords.shape[0]
-    feats = torch.randn(n, dim_in, device="cuda").half()
-    weights = torch.randn(kernel_size ** 3, dim_in, dim_out, device="cuda").half()
+    feats = torch.randn(n, dim_in, device="cuda", dtype=torch.float16)
+    weights = torch.randn(kernel_size ** 3, dim_in, dim_out, device="cuda", dtype=torch.float16) / dim_in**0.5
     indices = ops.idx_gen.gen_conv3d_subm_indices(coords, kernel_size)
 
+    _ = conv3d_implicit_gemm(feats, indices, weights, kernel_size)
     out_triton = conv3d_implicit_gemm(feats, indices, weights, kernel_size)
     out_ref = reference_conv3d_subm(feats, indices, weights, kernel_size)
 
-    # print((out_triton - out_ref).abs().max())
     if not torch.allclose(out_triton, out_ref, atol=1e-1, rtol=1e-3):
+        diffs = (out_triton - out_ref).abs()
+        print(f"Max diff: {diffs.max()}")
         print("Outputs do not match!")
         print(out_triton)
         print(out_ref)
@@ -38,15 +39,48 @@ def compare_conv3d_subm(coords, dim_in, dim_out, kernel_size):
     out_aot = aot_implicit_gemm.conv3d_implicit_gemm(
         feats, indices, weights, kernel_size
     )
+    # print(out_aot)
+    if not (torch.allclose(out_ref, out_aot, atol=1e-1, rtol=1e-2)):
+        print(f"Outputs do not match! ref vs aot", out_ref.shape)
+        diffs = (out_aot - out_ref).abs()
+        print(diffs.max())
+        idx = int(diffs.flatten().argmax().item())
+        row = idx // out_triton.shape[1]
+        print(row, idx % out_triton.shape[1])
+        # print(out_aot[row])
+        # print(out_ref[row])
+        print(out_aot.flatten()[idx], out_ref.flatten()[idx])
+        print(diffs.mean())   
 
-    print((out_aot - out_ref).abs().max())
-    print(out_aot)
-    print(torch.allclose(out_ref, out_aot, atol=1e-1, rtol=1e-3))
+
+def test():
+    idx = get_voxel_coords(10000, device='cuda')
+
+    compare_conv3d_subm(idx, 16, 32, 3)
+    compare_conv3d_subm(idx, 64, 64, 3)
+    compare_conv3d_subm(idx, 128, 128, 3)
+    compare_conv3d_subm(idx, 64, 128, 3)
+
+def print_cache(N, dim_in, dim_out, kernel_size, dtype, acc_dtype):
+
+    coords = get_voxel_coords(N, device='cuda')
+    n = coords.shape[0]
+    feats = torch.randn(n, dim_in, device="cuda", dtype=dtype)
+    weights = torch.randn(kernel_size ** 3, dim_in, dim_out, device="cuda", dtype=dtype) / dim_in**0.5
+    indices = ops.idx_gen.gen_conv3d_subm_indices(coords, kernel_size)
+
+    out = conv3d_implicit_gemm(feats, indices, weights, kernel_size, acc_dtype=acc_dtype)
+
+    for k, v in implicit_conv3d_kernel.cache.items():
+        print({"N": N, "D": dim_in, "D_prime": dim_out, "K": kernel_size**3, "dtype": dtype, "acc_dtype": acc_dtype})
+        print(f"{v.kwargs}, num_warps: {v.num_warps}, num_stages: {v.num_stages}")
     
+    implicit_conv3d_kernel.cache.clear()
 
-
-compare_conv3d_subm(torch.randint(0, 25, (200000, 4), device='cuda', dtype=torch.int32), 16, 32, 3)
-compare_conv3d_subm(torch.randint(0, 25, (200000, 4), device='cuda', dtype=torch.int32), 64, 64, 3)
-compare_conv3d_subm(torch.randint(0, 25, (200000, 4), device='cuda', dtype=torch.int32), 128, 128, 3)
-compare_conv3d_subm(torch.randint(0, 25, (200000, 4), device='cuda', dtype=torch.int32), 64, 128, 3)
+for N in [5000, 10_000, 100_000, 400_000]:
+    print_cache(N, 16, 16, 3, torch.float16, tl.float32)
+    print_cache(N, 16, 32, 3, torch.float16, tl.float32)
+    print_cache(N, 32, 32, 3, torch.float16, tl.float32)
+    print_cache(N, 32, 64, 3, torch.float16, tl.float32)
+    print_cache(N, 64, 64, 3, torch.float16, tl.float32)
 

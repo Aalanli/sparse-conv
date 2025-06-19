@@ -8,11 +8,11 @@ import ops
 import ops.idx_gen
 
 
-def conv3d_implicit_gemm(feats: torch.Tensor, indices: torch.Tensor, weights: torch.Tensor, kernel_size: int):
+def conv3d_implicit_gemm(feats: torch.Tensor, indices: torch.Tensor, weights: torch.Tensor, kernel_size: int, acc_dtype=tl.float32):
     N, D = feats.shape
     N_prime, K3 = indices.shape
-    out = torch.zeros((N_prime, weights.shape[2]), device=feats.device, dtype=feats.dtype)
-    grid = lambda meta: (cdiv(N_prime, meta["BLOCK_N"]) * cdiv(meta["D_prime"], meta["BLOCK_Dp"]),)
+    out = torch.empty((N_prime, weights.shape[2]), device=feats.device, dtype=feats.dtype)
+    grid = lambda meta: (cdiv(N_prime, meta["BLOCK_N"]) * cdiv(meta["D_prime"], meta["BLOCK_Dp"]) * meta['PARALLEL_K'],)
     implicit_conv3d_kernel[grid](
         feats,  # [N, D]
         indices,  # [N', K**3]
@@ -23,7 +23,7 @@ def conv3d_implicit_gemm(feats: torch.Tensor, indices: torch.Tensor, weights: to
         D,
         weights.shape[2],
         kernel_size,
-        acc_dtype=tl.float32,
+        acc_dtype=acc_dtype,
     )
     return out
 
