@@ -41,6 +41,7 @@ def print_cache(N, dim_in, dim_out, kernel_size, dtype, acc_dtype):
         config_key['num_warps'] = v.num_warps
         config_key['num_stages'] = v.num_stages
         implicit_conv3d_kernel.cache.clear()
+        print(config_key)
         return config_key
 
 def get_sm():
