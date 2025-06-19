@@ -1,3 +1,5 @@
 triton==3.3.1
 matplotlib
 torch 
+pandas
+tabulate

@@ -56,12 +56,13 @@ def compare_conv3d_subm():
 
 
 class Conv3DSubmModule(torch.nn.Module):
-    def __init__(self, kernel_size: int, in_channels: int = 64, out_channels: int = 64):
+    def __init__(self, kernel_size: int, in_channels: int = 64, out_channels: int = 64, acc_dtype=tl.float32):
         super().__init__()
         self.kernel_size = kernel_size
         self.weight = torch.nn.Parameter(
             torch.randn(kernel_size**3, in_channels, out_channels, device="cuda", dtype=torch.float16)
         )
+        self.acc_dtype = acc_dtype
 
     def forward(self, feats: torch.Tensor, coords: torch.Tensor):
         # coords: [N, 4] where last dimension is (x, y, z, batch_id)
@@ -70,6 +71,6 @@ class Conv3DSubmModule(torch.nn.Module):
         indices = ops.idx_gen.gen_conv3d_subm_indices(coords, self.kernel_size)
 
         # indices: [batch_size, kernel_size**3]
-        out = conv3d_implicit_gemm(feats, indices, self.weight, self.kernel_size)
+        out = conv3d_implicit_gemm(feats, indices, self.weight, self.kernel_size, acc_dtype=self.acc_dtype)
         return out
 

@@ -7,6 +7,7 @@ import argparse
 import torch
 import matplotlib.pyplot as plt
 import triton.testing
+import triton.language as tl
 
 # Import implementations
 try:
@@ -106,17 +107,29 @@ import ops.idx_gen
 from triton_spconv import Conv3DSubmModule
 import pandas as pd
 from tabulate import tabulate
-class ImplicitGemm(ImplBase):
-    name = 'implicit_gemm'
+class ImplicitGemmAccf32(ImplBase):
+    name = 'implicit_gemm_accf32'
 
     def __init__(self, in_channels, out_channels, kernel_size=3):
-        self.layer = Conv3DSubmModule(kernel_size, in_channels, out_channels).cuda()
+        self.layer = Conv3DSubmModule(kernel_size, in_channels, out_channels, acc_dtype=tl.float32).cuda()
 
     def forward(self, feats, coords, spatial_range):
         # coords: [N, 4] where last dimension is (x, y, z, batch_id)
         # feats: [N, D]
         return self.layer(feats, coords)
     
+class ImplicitGemmAccf16(ImplBase):
+    name = 'implicit_gemm_accf16'
+
+    def __init__(self, in_channels, out_channels, kernel_size=3):
+        self.layer = Conv3DSubmModule(kernel_size, in_channels, out_channels, acc_dtype=tl.float16).cuda()
+
+    def forward(self, feats, coords, spatial_range):
+        # coords: [N, 4] where last dimension is (x, y, z, batch_id)
+        # feats: [N, D]
+        return self.layer(feats, coords)
+    
+
 class NaiveConv3D(ImplBase):
     name = 'naive_conv3d'
 
@@ -193,7 +206,7 @@ def main():
     args = parser.parse_args()
 
     # list of implementations
-    implementations = [SpconvSubM, TorchsparseSubM, ImplicitGemm, Conv3DSubmAot]
+    implementations = [SpconvSubM, TorchsparseSubM, ImplicitGemmAccf16, ImplicitGemmAccf32, Conv3DSubmAot]
 
     all_results = {}
     for impl in implementations:
