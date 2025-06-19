@@ -36,16 +36,11 @@ print(spatial_range_actual, spatial_range_rand)
 
 torch.cuda.cudart().cudaProfilerStart()
 ops.idx_gen.gen_conv3d_subm_indices(idx_rand, K)
-ops.idx_gen.gen_conv3d_subm_indices(idx_actual, K, threads=1024)
 ops.idx_gen.gen_conv3d_subm_indices(idx_actual, K, threads=512)
-ops.idx_gen.gen_conv3d_subm_indices(idx_actual, K, threads=256)
-ops.idx_gen.gen_conv3d_subm_indices(idx_actual, K, threads=128)
 
 
-c1, r1 = ops.idx_gen.gen_conv3d_indices(idx_rand, spatial_range_rand, K, S, hash_map_multiplier=2)
-c2, r2 = ops.idx_gen.gen_conv3d_indices(idx_actual, spatial_range_actual, K, S, hash_map_multiplier=2, lookup_tries=64)
-c2, r2 = ops.idx_gen.gen_conv3d_indices(idx_actual, spatial_range_actual, K, S, hash_map_multiplier=2, threads=512, lookup_tries=64)
-c2, r2 = ops.idx_gen.gen_conv3d_indices(idx_actual, spatial_range_actual, K, S, hash_map_multiplier=2, threads=256, lookup_tries=64)
-c2, r2 = ops.idx_gen.gen_conv3d_indices(idx_actual, spatial_range_actual, K, S, hash_map_multiplier=8, threads=128, lookup_tries=64)
+c1, r1 = ops.idx_gen.gen_conv3d_indices(idx_rand, spatial_range_rand, K, S)
+c2, r2 = ops.idx_gen.gen_conv3d_indices(idx_actual, spatial_range_actual, K, S)
+
 torch.cuda.cudart().cudaProfilerStop()
 
