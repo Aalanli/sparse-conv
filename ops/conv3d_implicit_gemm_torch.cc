@@ -7,69 +7,18 @@
 #include <c10/cuda/CUDAStream.h>
 #include <memory>
 #include <torch/script.h>
-#include <tuple>
-#include <map>
 
-thread_local static std::vector<std::unique_ptr<Conv3DImplicitGemmKernel>> kernels;
 
-using kernel_hash_t = std::tuple<int, int, int, int, int, std::string>;
-thread_local static std::unique_ptr<std::map<kernel_hash_t, int>> kernel_map;
-
-template <typename F>
-double record(
-    F&& func,
-    CUstream stream
-) {
-    cudaEvent_t start, stop;
-    cudaEventCreate(&start);
-    cudaEventCreate(&stop);
-    cudaEventRecord(start, stream);
-    func();
-    cudaEventRecord(stop, stream);
-    cudaEventSynchronize(stop);
-    float milliseconds = 0.0f;
-    cudaEventElapsedTime(&milliseconds, start, stop);
-    cudaEventDestroy(start);
-    cudaEventDestroy(stop);
-    return static_cast<double>(milliseconds);
-}
-
-template <typename F>
-double benchmark(
-    F&& func,
-    CUstream stream
-) {
-    c10::cuda::CUDAGuard device_guard(at::cuda::current_device());
-    const int n_warmup = 3;
-    const double target_time = 10; // target time for recording
-    // Warmup
-    double approx_iter_time = record(
-        [&]() {
-            for (int64_t i = 0; i < n_warmup; ++i) {
-                func();
-            }
-        },
-        stream
-    ) / n_warmup;
-
-    int num_iterations = std::max(static_cast<int>(target_time / (approx_iter_time + 0.1)), 2);
-
-    return record(
-        [&]() {
-            for (int64_t i = 0; i < num_iterations; ++i) {
-                func();
-            }
-        },
-        stream
-    ) / num_iterations;
-}
+thread_local std::unique_ptr<Conv3DKernels> kernels = nullptr;
 
 void setup_kernels(
     std::string ptx_dir
 ) {
-    kernels = setup(ptx_dir);
-    kernel_map = std::make_unique<std::map<kernel_hash_t, int>>();
-    TORCH_CHECK(!kernels.empty(), "No kernels were loaded from the provided PTX directory");
+    kernels = std::make_unique<Conv3DKernels>(ptx_dir);
+}
+
+void save_kernel_map(std::string kernel_map_file) {
+    kernels->save_kernel_map(kernel_map_file);
 }
 
 torch::Tensor conv3d_implicit_gemm_torch(
@@ -82,6 +31,7 @@ torch::Tensor conv3d_implicit_gemm_torch(
     TORCH_CHECK(features.is_cuda(),  "features must be a CUDA tensor");
     TORCH_CHECK(indices.is_cuda() , "indices must be a CUDA tensor");
     TORCH_CHECK(weights.is_cuda() , "weights must be a CUDA tensor");
+    TORCH_CHECK(kernels != nullptr, "Kernels must be set up before calling conv3d_implicit_gemm_torch");
 
 
     int N = features.size(0);
@@ -118,38 +68,19 @@ torch::Tensor conv3d_implicit_gemm_torch(
     }
 
     auto stream = at::cuda::getCurrentCUDAStream().stream();
-    const int seq_len_quant = 2500;
-    kernel_hash_t kernel_hash = std::make_tuple(
-        N / seq_len_quant, NPrime / seq_len_quant, D, DPrime, K, dtype
-    );
-    if (kernel_map->find(kernel_hash) == kernel_map->end()) {
-        // Find a suitable kernel
-        double best_time = 1e9;
-        int best_kernel_index = -1;
-        for (size_t i = 0; i < kernels.size(); ++i) {
-            if (kernels[i]->can_run(N, NPrime, D, DPrime, K, acc_dtype, dtype)) {
-                double time = benchmark([&]() {
-                    kernels[i]->run(
-                        features_ptr, indices_ptr, weights_ptr, output_ptr,
-                        N, NPrime, D, DPrime, K, stream
-                    );
-                }, stream);
-
-                if (time < best_time) {
-                    best_time = time;
-                    best_kernel_index = i;
-                }
-            }
-        }
-
-        TORCH_CHECK(best_kernel_index != -1, "No suitable kernel found for the given parameters");
-        (*kernel_map)[kernel_hash] = best_kernel_index;
-    }
-
-    int kernel_index = (*kernel_map)[kernel_hash];
-    kernels[kernel_index]->run(
-        features_ptr, indices_ptr, weights_ptr, output_ptr,
-        N, NPrime, D, DPrime, K, stream
+    kernels->run(
+        features_ptr, // [N, D]
+        indices_ptr, // [N', K**3]
+        weights_ptr, // [K**3, D, D']
+        output_ptr, // [N', D']
+        N,
+        NPrime,
+        D,
+        DPrime,
+        K,
+        acc_dtype,
+        dtype,
+        stream
     );
 
     return output;
@@ -158,6 +89,7 @@ torch::Tensor conv3d_implicit_gemm_torch(
 
 TORCH_LIBRARY(conv3d_implicit_gemm, m) {
     m.def("setup_kernels", &setup_kernels);
+    m.def("save_kernel_map", &save_kernel_map);
     m.def("conv3d_implicit_gemm_torch", &conv3d_implicit_gemm_torch);
 }
 

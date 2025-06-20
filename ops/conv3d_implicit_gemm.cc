@@ -2,6 +2,7 @@
 #include <cuda.h>
 #include <cuda_fp16.h>
 #include "json.hpp"
+#include <sstream>
 #include <string>
 #include <cassert>
 
@@ -144,22 +145,80 @@ void Conv3DImplicitGemmKernel::run(
     ));
 }
 
-std::vector<std::unique_ptr<Conv3DImplicitGemmKernel>> setup(
+void Conv3DKernels::load_kernel_map(std::string kernel_map_file) {
+    std::ifstream file(kernel_map_file);
+    if (!file.is_open()) {
+        std::cerr << "Cached kernel map file not found: " << kernel_map_file << std::endl;
+        return;
+    }
+    json kmap = json::parse(file);
+    for (auto& value : kmap) {
+        int N = value["N"];
+        int NPrime = value["NPrime"];
+        int D = value["D"];
+        int DPrime = value["DPrime"];
+        int K = value["K"];
+        int sm = value["sm"];
+        std::string acc_dtype = value["acc_dtype"];
+        std::string dtype = value["dtype"];
+        kernel_hash_t key = std::make_tuple(N, NPrime, D, DPrime, K, sm, acc_dtype, dtype);
+        int index = value["index"];
+        if (kernel_map.find(key) != kernel_map.end()) {
+            std::cerr << "Warning: Duplicate kernel map entry "
+                      << value.dump() << std::endl;
+        } else {
+            kernel_map[key] = index;
+        }
+    }
+}
+
+void Conv3DKernels::save_kernel_map(std::string kernel_map_file) {
+    if (std::filesystem::exists(kernel_map_file)) {
+        load_kernel_map(kernel_map_file);
+    }
+    json kmap;
+    for (const auto& [key, index] : kernel_map) {
+        auto [N, NPrime, D, DPrime, K, sm, acc_dtype, dtype] = key;
+        kmap.push_back({
+            {"N", N},
+            {"NPrime", NPrime},
+            {"D", D},
+            {"DPrime", DPrime},
+            {"K", K},
+            {"sm", sm},
+            {"acc_dtype", acc_dtype},
+            {"dtype", dtype},
+            {"index", index},
+            {"signature", kernels[index]->get_signature()}
+        });
+    }
+    std::ofstream file(kernel_map_file);
+    file << kmap.dump(4);
+}
+
+Conv3DKernels::Conv3DKernels(
     std::string ptx_dir
 ) {
+
+    int device = 0;
+    CHECK(cuDeviceGet(&device, 0));
+    int device_major = 0, device_minor = 0;
+    CHECK(cuDeviceGetAttribute(&device_major, CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MAJOR, device));
+    CHECK(cuDeviceGetAttribute(&device_minor, CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MINOR, device));
+    sm = device_major * 10 + device_minor;
+
     ptx_dir = std::filesystem::absolute(ptx_dir).string();
     std::string config_path = ptx_dir + "/meta.json";
     std::cout << "Loading kernels from: " << config_path << std::endl;
     std::ifstream config_file (config_path);
-    std::string config_file_content(
+    metadata = std::string(
         (std::istreambuf_iterator<char>(config_file)),
         std::istreambuf_iterator<char>()
     );
     json config = json::parse(
-        config_file_content
+        metadata
     );
     
-    std::vector<std::unique_ptr<Conv3DImplicitGemmKernel>> kernels;
     for (auto& [key, value] : config.items()) {
         auto ptx_path = ptx_dir + "/" + key;
         auto ker = new Conv3DImplicitGemmKernel(
@@ -168,6 +227,61 @@ std::vector<std::unique_ptr<Conv3DImplicitGemmKernel>> setup(
         kernels.push_back(std::unique_ptr<Conv3DImplicitGemmKernel>(ker));
     }
 
-    return kernels;
+    load_kernel_map(ptx_dir + "/kernel_map.json");
 }
 
+void Conv3DKernels::run(
+    CUdeviceptr features, // [N, D]
+    CUdeviceptr indices, // [N', K**3]
+    CUdeviceptr weights, // [K**3, D, D']
+    CUdeviceptr output, // [N', D']
+    int N,
+    int NPrime,
+    int D,
+    int DPrime,
+    int K,
+    std::string acc_dtype,
+    std::string dtype,
+    CUstream stream
+) {
+    // quantize N 
+    kernel_hash_t key = std::make_tuple(N / 2500, NPrime, D, DPrime, K, sm, acc_dtype, dtype);
+    
+    if (kernel_map.find(key) == kernel_map.end()) {
+        // Find a suitable kernel
+        double best_time = 1e9;
+        int best_kernel_index = -1;
+        for (size_t i = 0; i < kernels.size(); ++i) {
+            if (kernels[i]->can_run(N, NPrime, D, DPrime, K, acc_dtype, dtype)) {
+                double time = benchmark([&]() {
+                    kernels[i]->run(
+                        features, indices, weights, output,
+                        N, NPrime, D, DPrime, K, stream
+                    );
+                }, stream);
+
+                if (time < best_time) {
+                    best_time = time;
+                    best_kernel_index = i;
+                }
+            }
+        }
+        if (best_kernel_index == -1) {
+            std::ostringstream oss;
+            oss << "No suitable kernel found for parameters: "
+
+                << "N: " << N << ", "
+                << "NPrime: " << NPrime << ", "
+                << "D: " << D << ", "
+                << "DPrime: " << DPrime << ", "
+                << "K: " << K << ", "
+                << "acc_dtype: " << acc_dtype << ", "
+                << "dtype: " << dtype;
+            throw std::runtime_error(oss.str());
+        }
+        kernel_map[key] = best_kernel_index;
+    }
+    
+    int index = kernel_map[key];
+    kernels[index]->run(features, indices, weights, output, N, NPrime, D, DPrime, K, stream);
+}
