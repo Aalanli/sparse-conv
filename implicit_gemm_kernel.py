@@ -67,7 +67,7 @@ def implicit_conv3d_kernel(
                 offset_k = k * D + ki * BLOCK_K
 
                 ptr_f = features + (inds[:, None] * D + tl.arange(0, BLOCK_K)[None, :] + ki * BLOCK_K)
-                mask_f = (inds[:, None] != -1) & (tl.arange(0, BLOCK_K)[None, :] + ki * BLOCK_K < D)
+                mask_f = ((0 <= inds) & (inds < N))[:, None] & (tl.arange(0, BLOCK_K)[None, :] + ki * BLOCK_K < D)
 
                 ptr_w = weights + (
                     (tl.arange(0, BLOCK_K)[:, None] + offset_k) * D_prime

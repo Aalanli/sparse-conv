@@ -23,3 +23,4 @@ def conv3d_implicit_gemm(input: Tensor, indices: Tensor, weight: Tensor, kernel_
 def save_kernel_map():
     init_kernels()
     torch.ops.conv3d_implicit_gemm.save_kernel_map(str(Path(__file__).parent.parent / 'kernel_ptx' / 'kernel_map.json'))
+

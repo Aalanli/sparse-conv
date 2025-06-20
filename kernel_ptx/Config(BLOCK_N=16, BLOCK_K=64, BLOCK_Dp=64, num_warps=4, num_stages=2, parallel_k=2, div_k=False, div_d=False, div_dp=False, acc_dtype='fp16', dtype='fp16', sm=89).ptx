@@ -23,7 +23,7 @@
 )
 .reqntid 128, 1, 1
 {
-	.reg .pred 	%p<141>;
+	.reg .pred 	%p<157>;
 	.reg .b16 	%rs<187>;
 	.reg .b32 	%r<575>;
 	.reg .b64 	%rd<420>;
@@ -85,17 +85,17 @@ $L__tmp2:
 	or.b32  	%r21, %r120, %r12;
 	or.b32  	%r22, %r120, %r13;
 	.loc	1 60 39                         // implicit_gemm_kernel.py:60:39
-	setp.lt.s32 	%p1, %r571, %r3;
+	setp.lt.s32 	%p9, %r571, %r3;
 	mov.u32 	%r570, global_smem;
-	setp.lt.s32 	%p133, %r22, %r102;
-	setp.lt.s32 	%p134, %r21, %r102;
-	setp.lt.s32 	%p135, %r20, %r102;
-	setp.lt.s32 	%p136, %r19, %r102;
-	setp.lt.s32 	%p137, %r18, %r102;
-	setp.lt.s32 	%p138, %r17, %r102;
-	setp.lt.s32 	%p139, %r16, %r102;
-	setp.lt.s32 	%p140, %r15, %r102;
-	@%p1 bra 	$L__BB0_2;
+	setp.lt.s32 	%p149, %r22, %r102;
+	setp.lt.s32 	%p150, %r21, %r102;
+	setp.lt.s32 	%p151, %r20, %r102;
+	setp.lt.s32 	%p152, %r19, %r102;
+	setp.lt.s32 	%p153, %r18, %r102;
+	setp.lt.s32 	%p154, %r17, %r102;
+	setp.lt.s32 	%p155, %r16, %r102;
+	setp.lt.s32 	%p156, %r15, %r102;
+	@%p9 bra 	$L__BB0_2;
 	bra.uni 	$L__BB0_1;
 $L__BB0_2:                              // %.lr.ph8
 	.loc	1 0 39                          // implicit_gemm_kernel.py:0:39
@@ -394,7 +394,7 @@ $L__BB0_2:                              // %.lr.ph8
 	mad.lo.s32 	%r298, %r104, %r231, %r140;
 	cvt.u64.u32 	%rd353, %r298;
 	mov.b16 	%rs171, 0x0000;
-	setp.lt.s32 	%p10, %r23, %r102;
+	setp.lt.s32 	%p18, %r23, %r102;
 	mov.u16 	%rs172, %rs171;
 	mov.u16 	%rs173, %rs171;
 	mov.u16 	%rs174, %rs171;
@@ -440,8 +440,8 @@ $L__BB0_7:                              // %.loopexit
 	add.s64 	%rd355, %rd355, %rd16;
 	add.s64 	%rd354, %rd354, %rd16;
 	add.s64 	%rd353, %rd353, %rd16;
-	setp.lt.s32 	%p107, %r571, %r3;
-	@%p107 bra 	$L__BB0_3;
+	setp.lt.s32 	%p123, %r571, %r3;
+	@%p123 bra 	$L__BB0_3;
 	bra.uni 	$L__BB0_8;
 $L__BB0_3:                              // =>This Loop Header: Depth=1
                                         //     Child Loop BB0_6 Depth 2
@@ -459,93 +459,117 @@ $L__BB0_3:                              // =>This Loop Header: Depth=1
 	.loc	1 63 23                         // implicit_gemm_kernel.py:63:23
 	// begin inline asm
 	mov.u32 %r299, 0xffffffffffffffff;
-	@%p140 ld.global.b32 { %r299 }, [ %rd204 + 0 ];
+	@%p156 ld.global.b32 { %r299 }, [ %rd204 + 0 ];
 	// end inline asm
 	// begin inline asm
 	mov.u32 %r300, 0xffffffffffffffff;
-	@%p139 ld.global.b32 { %r300 }, [ %rd205 + 0 ];
+	@%p155 ld.global.b32 { %r300 }, [ %rd205 + 0 ];
 	// end inline asm
 	// begin inline asm
 	mov.u32 %r301, 0xffffffffffffffff;
-	@%p138 ld.global.b32 { %r301 }, [ %rd206 + 0 ];
+	@%p154 ld.global.b32 { %r301 }, [ %rd206 + 0 ];
 	// end inline asm
 	// begin inline asm
 	mov.u32 %r302, 0xffffffffffffffff;
-	@%p137 ld.global.b32 { %r302 }, [ %rd207 + 0 ];
+	@%p153 ld.global.b32 { %r302 }, [ %rd207 + 0 ];
 	// end inline asm
 	// begin inline asm
 	mov.u32 %r303, 0xffffffffffffffff;
-	@%p136 ld.global.b32 { %r303 }, [ %rd208 + 0 ];
+	@%p152 ld.global.b32 { %r303 }, [ %rd208 + 0 ];
 	// end inline asm
 	// begin inline asm
 	mov.u32 %r304, 0xffffffffffffffff;
-	@%p135 ld.global.b32 { %r304 }, [ %rd209 + 0 ];
+	@%p151 ld.global.b32 { %r304 }, [ %rd209 + 0 ];
 	// end inline asm
 	// begin inline asm
 	mov.u32 %r305, 0xffffffffffffffff;
-	@%p134 ld.global.b32 { %r305 }, [ %rd210 + 0 ];
+	@%p150 ld.global.b32 { %r305 }, [ %rd210 + 0 ];
 	// end inline asm
 	// begin inline asm
 	mov.u32 %r306, 0xffffffffffffffff;
-	@%p133 ld.global.b32 { %r306 }, [ %rd211 + 0 ];
+	@%p149 ld.global.b32 { %r306 }, [ %rd211 + 0 ];
 	// end inline asm
 	// begin inline asm
 	mov.u32 %r307, 0xffffffffffffffff;
-	@%p10 ld.global.b32 { %r307 }, [ %rd212 + 0 ];
+	@%p18 ld.global.b32 { %r307 }, [ %rd212 + 0 ];
 	// end inline asm
 	.loc	1 65 27                         // implicit_gemm_kernel.py:65:27
-	setp.gt.s32 	%p11, %r307, -1;
+	setp.gt.s32 	%p27, %r307, -1;
 	.loc	1 65 43                         // implicit_gemm_kernel.py:65:43
-	setp.lt.s32 	%p12, %r307, %r101;
+	setp.lt.s32 	%p36, %r307, %r101;
 	.loc	1 65 36                         // implicit_gemm_kernel.py:65:36
-	and.pred  	%p13, %p11, %p12;
+	and.pred  	%p37, %p27, %p36;
 	.loc	1 65 50                         // implicit_gemm_kernel.py:65:50
-	selp.u32 	%r308, 1, 0, %p13;
+	selp.u32 	%r308, 1, 0, %p37;
 	shfl.sync.bfly.b32	%r309, %r308, 8, 31, -1;
 	and.b32  	%r310, %r309, 1;
-	setp.eq.b32 	%p14, %r310, 1;
+	setp.eq.b32 	%p38, %r310, 1;
 $L__tmp3:
 	.loc	1 6 15                          // implicit_gemm_kernel.py:6:15
-	or.pred  	%p15, %p13, %p14;
+	or.pred  	%p39, %p37, %p38;
 $L__tmp4:
 	.loc	1 65 50                         // implicit_gemm_kernel.py:65:50
-	selp.u32 	%r311, 1, 0, %p15;
+	selp.u32 	%r311, 1, 0, %p39;
 	shfl.sync.bfly.b32	%r312, %r311, 4, 31, -1;
 	and.b32  	%r313, %r312, 1;
-	setp.eq.b32 	%p16, %r313, 1;
+	setp.eq.b32 	%p40, %r313, 1;
 $L__tmp5:
 	.loc	1 6 15                          // implicit_gemm_kernel.py:6:15
-	or.pred  	%p17, %p15, %p16;
+	or.pred  	%p41, %p39, %p40;
 $L__tmp6:
 	.loc	1 65 50                         // implicit_gemm_kernel.py:65:50
-	selp.u32 	%r314, 1, 0, %p17;
+	selp.u32 	%r314, 1, 0, %p41;
 	shfl.sync.bfly.b32	%r315, %r314, 2, 31, -1;
 	and.b32  	%r316, %r315, 1;
-	setp.eq.b32 	%p18, %r316, 1;
+	setp.eq.b32 	%p42, %r316, 1;
 $L__tmp7:
 	.loc	1 6 15                          // implicit_gemm_kernel.py:6:15
-	or.pred  	%p19, %p17, %p18;
+	or.pred  	%p43, %p41, %p42;
 $L__tmp8:
 	.loc	1 65 50                         // implicit_gemm_kernel.py:65:50
-	selp.u32 	%r317, 1, 0, %p19;
+	selp.u32 	%r317, 1, 0, %p43;
 	shfl.sync.bfly.b32	%r318, %r317, 1, 31, -1;
 	and.b32  	%r319, %r318, 1;
-	setp.eq.b32 	%p20, %r319, 1;
+	setp.eq.b32 	%p44, %r319, 1;
 $L__tmp9:
 	.loc	1 6 15                          // implicit_gemm_kernel.py:6:15
-	or.pred  	%p21, %p19, %p20;
+	or.pred  	%p45, %p43, %p44;
 $L__tmp10:
 	.loc	1 65 11                         // implicit_gemm_kernel.py:65:11
-	not.pred 	%p22, %p21;
-	@%p22 bra 	$L__BB0_7;
+	not.pred 	%p46, %p45;
+	@%p46 bra 	$L__BB0_7;
 // %bb.4:                               //   in Loop: Header=BB0_3 Depth=1
 	.loc	1 0 11                          // implicit_gemm_kernel.py:0:11
-	setp.lt.s32 	%p23, %r27, 64;
+	setp.lt.s32 	%p47, %r27, 64;
 	.loc	1 66 28                         // implicit_gemm_kernel.py:66:28
-	@%p23 bra 	$L__BB0_7;
+	@%p47 bra 	$L__BB0_7;
 // %bb.5:                               // %.lr.ph.preheader
                                         //   in Loop: Header=BB0_3 Depth=1
 	.loc	1 0 28                          // implicit_gemm_kernel.py:0:28
+	setp.gt.s32 	%p19, %r299, -1;
+	setp.gt.s32 	%p20, %r300, -1;
+	setp.gt.s32 	%p21, %r301, -1;
+	setp.gt.s32 	%p22, %r302, -1;
+	setp.gt.s32 	%p23, %r303, -1;
+	setp.gt.s32 	%p24, %r304, -1;
+	setp.gt.s32 	%p25, %r305, -1;
+	setp.gt.s32 	%p26, %r306, -1;
+	setp.lt.s32 	%p28, %r299, %r101;
+	setp.lt.s32 	%p29, %r300, %r101;
+	setp.lt.s32 	%p30, %r301, %r101;
+	setp.lt.s32 	%p31, %r302, %r101;
+	setp.lt.s32 	%p32, %r303, %r101;
+	setp.lt.s32 	%p33, %r304, %r101;
+	setp.lt.s32 	%p34, %r305, %r101;
+	setp.lt.s32 	%p35, %r306, %r101;
+	and.pred  	%p1, %p19, %p28;
+	and.pred  	%p2, %p20, %p29;
+	and.pred  	%p3, %p21, %p30;
+	and.pred  	%p4, %p22, %p31;
+	and.pred  	%p5, %p23, %p32;
+	and.pred  	%p6, %p24, %p33;
+	and.pred  	%p7, %p25, %p34;
+	and.pred  	%p8, %p26, %p35;
 	mul.lo.s32 	%r89, %r299, %r103;
 	mul.lo.s32 	%r90, %r300, %r103;
 	mul.lo.s32 	%r91, %r301, %r103;
@@ -609,16 +633,8 @@ $L__tmp10:
 $L__BB0_6:                              // %.lr.ph
                                         //   Parent Loop BB0_3 Depth=1
                                         // =>  This Inner Loop Header: Depth=2
-	.loc	1 70 43                         // implicit_gemm_kernel.py:70:43
-	setp.ne.s32 	%p64, %r306, -1;
-	setp.ne.s32 	%p65, %r305, -1;
-	setp.ne.s32 	%p66, %r304, -1;
-	setp.ne.s32 	%p67, %r303, -1;
-	setp.ne.s32 	%p68, %r302, -1;
-	setp.ne.s32 	%p69, %r301, -1;
-	setp.ne.s32 	%p70, %r300, -1;
-	setp.ne.s32 	%p71, %r299, -1;
-	setp.lt.s32 	%p72, %r574, %r104;
+	.loc	1 0 28                          // implicit_gemm_kernel.py:0:28
+	setp.lt.s32 	%p88, %r574, %r104;
 	.loc	1 69 89                         // implicit_gemm_kernel.py:69:89
 	add.s64 	%rd255, %rd89, %rd418;
 	add.s64 	%rd256, %rd88, %rd418;
@@ -653,18 +669,18 @@ $L__BB0_6:                              // %.lr.ph
 	cvt.u32.u64 	%r456, %rd262;
 	mul.wide.s32 	%rd270, %r456, 2;
 	add.s64 	%rd222, %rd191, %rd270;
-	.loc	1 70 98                         // implicit_gemm_kernel.py:70:98
+	.loc	1 70 112                        // implicit_gemm_kernel.py:70:112
 	add.s64 	%rd271, %rd10, %rd418;
-	setp.lt.s64 	%p73, %rd271, %rd11;
-	.loc	1 70 50                         // implicit_gemm_kernel.py:70:50
-	and.pred  	%p24, %p71, %p73;
-	and.pred  	%p25, %p70, %p73;
-	and.pred  	%p26, %p69, %p73;
-	and.pred  	%p27, %p68, %p73;
-	and.pred  	%p28, %p67, %p73;
-	and.pred  	%p29, %p66, %p73;
-	and.pred  	%p30, %p65, %p73;
-	and.pred  	%p31, %p64, %p73;
+	setp.lt.s64 	%p89, %rd271, %rd11;
+	.loc	1 70 64                         // implicit_gemm_kernel.py:70:64
+	and.pred  	%p48, %p1, %p89;
+	and.pred  	%p49, %p2, %p89;
+	and.pred  	%p50, %p3, %p89;
+	and.pred  	%p51, %p4, %p89;
+	and.pred  	%p52, %p5, %p89;
+	and.pred  	%p53, %p6, %p89;
+	and.pred  	%p54, %p7, %p89;
+	and.pred  	%p55, %p8, %p89;
 	.loc	1 73 54                         // implicit_gemm_kernel.py:73:54
 	add.s64 	%rd272, %rd385, %rd418;
 	.loc	1 75 22                         // implicit_gemm_kernel.py:75:22
@@ -799,135 +815,135 @@ $L__BB0_6:                              // %.lr.ph
 	add.s64 	%rd254, %rd192, %rd336;
 	cvt.u32.u64 	%r489, %rd272;
 	.loc	1 77 72                         // implicit_gemm_kernel.py:77:72
-	setp.lt.s32 	%p74, %r489, %r28;
+	setp.lt.s32 	%p90, %r489, %r28;
 	add.s32 	%r490, %r489, 2;
-	setp.lt.s32 	%p75, %r490, %r28;
+	setp.lt.s32 	%p91, %r490, %r28;
 	add.s32 	%r491, %r489, 4;
-	setp.lt.s32 	%p76, %r491, %r28;
+	setp.lt.s32 	%p92, %r491, %r28;
 	add.s32 	%r492, %r489, 6;
-	setp.lt.s32 	%p77, %r492, %r28;
+	setp.lt.s32 	%p93, %r492, %r28;
 	add.s32 	%r493, %r489, 8;
-	setp.lt.s32 	%p78, %r493, %r28;
+	setp.lt.s32 	%p94, %r493, %r28;
 	add.s32 	%r494, %r489, 10;
-	setp.lt.s32 	%p79, %r494, %r28;
+	setp.lt.s32 	%p95, %r494, %r28;
 	add.s32 	%r495, %r489, 12;
-	setp.lt.s32 	%p80, %r495, %r28;
+	setp.lt.s32 	%p96, %r495, %r28;
 	add.s32 	%r496, %r489, 14;
-	setp.lt.s32 	%p81, %r496, %r28;
+	setp.lt.s32 	%p97, %r496, %r28;
 	add.s32 	%r497, %r489, 16;
-	setp.lt.s32 	%p82, %r497, %r28;
+	setp.lt.s32 	%p98, %r497, %r28;
 	add.s32 	%r498, %r489, 18;
-	setp.lt.s32 	%p83, %r498, %r28;
+	setp.lt.s32 	%p99, %r498, %r28;
 	add.s32 	%r499, %r489, 20;
-	setp.lt.s32 	%p84, %r499, %r28;
+	setp.lt.s32 	%p100, %r499, %r28;
 	add.s32 	%r500, %r489, 22;
-	setp.lt.s32 	%p85, %r500, %r28;
+	setp.lt.s32 	%p101, %r500, %r28;
 	add.s32 	%r501, %r489, 24;
-	setp.lt.s32 	%p86, %r501, %r28;
+	setp.lt.s32 	%p102, %r501, %r28;
 	add.s32 	%r502, %r489, 26;
-	setp.lt.s32 	%p87, %r502, %r28;
+	setp.lt.s32 	%p103, %r502, %r28;
 	add.s32 	%r503, %r489, 28;
-	setp.lt.s32 	%p88, %r503, %r28;
+	setp.lt.s32 	%p104, %r503, %r28;
 	add.s32 	%r504, %r489, 30;
-	setp.lt.s32 	%p89, %r504, %r28;
+	setp.lt.s32 	%p105, %r504, %r28;
 	add.s32 	%r505, %r489, 32;
-	setp.lt.s32 	%p90, %r505, %r28;
+	setp.lt.s32 	%p106, %r505, %r28;
 	add.s32 	%r506, %r489, 34;
-	setp.lt.s32 	%p91, %r506, %r28;
+	setp.lt.s32 	%p107, %r506, %r28;
 	add.s32 	%r507, %r489, 36;
-	setp.lt.s32 	%p92, %r507, %r28;
+	setp.lt.s32 	%p108, %r507, %r28;
 	add.s32 	%r508, %r489, 38;
-	setp.lt.s32 	%p93, %r508, %r28;
+	setp.lt.s32 	%p109, %r508, %r28;
 	add.s32 	%r509, %r489, 40;
-	setp.lt.s32 	%p94, %r509, %r28;
+	setp.lt.s32 	%p110, %r509, %r28;
 	add.s32 	%r510, %r489, 42;
-	setp.lt.s32 	%p95, %r510, %r28;
+	setp.lt.s32 	%p111, %r510, %r28;
 	add.s32 	%r511, %r489, 44;
-	setp.lt.s32 	%p96, %r511, %r28;
+	setp.lt.s32 	%p112, %r511, %r28;
 	add.s32 	%r512, %r489, 46;
-	setp.lt.s32 	%p97, %r512, %r28;
+	setp.lt.s32 	%p113, %r512, %r28;
 	add.s32 	%r513, %r489, 48;
-	setp.lt.s32 	%p98, %r513, %r28;
+	setp.lt.s32 	%p114, %r513, %r28;
 	add.s32 	%r514, %r489, 50;
-	setp.lt.s32 	%p99, %r514, %r28;
+	setp.lt.s32 	%p115, %r514, %r28;
 	add.s32 	%r515, %r489, 52;
-	setp.lt.s32 	%p100, %r515, %r28;
+	setp.lt.s32 	%p116, %r515, %r28;
 	add.s32 	%r516, %r489, 54;
-	setp.lt.s32 	%p101, %r516, %r28;
+	setp.lt.s32 	%p117, %r516, %r28;
 	add.s32 	%r517, %r489, 56;
-	setp.lt.s32 	%p102, %r517, %r28;
+	setp.lt.s32 	%p118, %r517, %r28;
 	add.s32 	%r518, %r489, 58;
-	setp.lt.s32 	%p103, %r518, %r28;
+	setp.lt.s32 	%p119, %r518, %r28;
 	add.s32 	%r519, %r489, 60;
-	setp.lt.s32 	%p104, %r519, %r28;
+	setp.lt.s32 	%p120, %r519, %r28;
 	add.s32 	%r520, %r489, 62;
-	setp.lt.s32 	%p105, %r520, %r28;
+	setp.lt.s32 	%p121, %r520, %r28;
 	.loc	1 78 20                         // implicit_gemm_kernel.py:78:20
-	and.pred  	%p32, %p72, %p74;
-	and.pred  	%p33, %p72, %p75;
-	and.pred  	%p34, %p72, %p76;
-	and.pred  	%p35, %p72, %p77;
-	and.pred  	%p36, %p72, %p78;
-	and.pred  	%p37, %p72, %p79;
-	and.pred  	%p38, %p72, %p80;
-	and.pred  	%p39, %p72, %p81;
-	and.pred  	%p40, %p72, %p82;
-	and.pred  	%p41, %p72, %p83;
-	and.pred  	%p42, %p72, %p84;
-	and.pred  	%p43, %p72, %p85;
-	and.pred  	%p44, %p72, %p86;
-	and.pred  	%p45, %p72, %p87;
-	and.pred  	%p46, %p72, %p88;
-	and.pred  	%p47, %p72, %p89;
-	and.pred  	%p48, %p72, %p90;
-	and.pred  	%p49, %p72, %p91;
-	and.pred  	%p50, %p72, %p92;
-	and.pred  	%p51, %p72, %p93;
-	and.pred  	%p52, %p72, %p94;
-	and.pred  	%p53, %p72, %p95;
-	and.pred  	%p54, %p72, %p96;
-	and.pred  	%p55, %p72, %p97;
-	and.pred  	%p56, %p72, %p98;
-	and.pred  	%p57, %p72, %p99;
-	and.pred  	%p58, %p72, %p100;
-	and.pred  	%p59, %p72, %p101;
-	and.pred  	%p60, %p72, %p102;
-	and.pred  	%p61, %p72, %p103;
-	and.pred  	%p62, %p72, %p104;
-	and.pred  	%p63, %p72, %p105;
+	and.pred  	%p56, %p88, %p90;
+	and.pred  	%p57, %p88, %p91;
+	and.pred  	%p58, %p88, %p92;
+	and.pred  	%p59, %p88, %p93;
+	and.pred  	%p60, %p88, %p94;
+	and.pred  	%p61, %p88, %p95;
+	and.pred  	%p62, %p88, %p96;
+	and.pred  	%p63, %p88, %p97;
+	and.pred  	%p64, %p88, %p98;
+	and.pred  	%p65, %p88, %p99;
+	and.pred  	%p66, %p88, %p100;
+	and.pred  	%p67, %p88, %p101;
+	and.pred  	%p68, %p88, %p102;
+	and.pred  	%p69, %p88, %p103;
+	and.pred  	%p70, %p88, %p104;
+	and.pred  	%p71, %p88, %p105;
+	and.pred  	%p72, %p88, %p106;
+	and.pred  	%p73, %p88, %p107;
+	and.pred  	%p74, %p88, %p108;
+	and.pred  	%p75, %p88, %p109;
+	and.pred  	%p76, %p88, %p110;
+	and.pred  	%p77, %p88, %p111;
+	and.pred  	%p78, %p88, %p112;
+	and.pred  	%p79, %p88, %p113;
+	and.pred  	%p80, %p88, %p114;
+	and.pred  	%p81, %p88, %p115;
+	and.pred  	%p82, %p88, %p116;
+	and.pred  	%p83, %p88, %p117;
+	and.pred  	%p84, %p88, %p118;
+	and.pred  	%p85, %p88, %p119;
+	and.pred  	%p86, %p88, %p120;
+	and.pred  	%p87, %p88, %p121;
 	mov.b16 	%rs52, 0;
 	.loc	1 81 39                         // implicit_gemm_kernel.py:81:39
 	// begin inline asm
 	mov.u16 %rs51, %rs52;
-	@%p24 ld.global.b16 { %rs51 }, [ %rd215 + 0 ];
+	@%p48 ld.global.b16 { %rs51 }, [ %rd215 + 0 ];
 	// end inline asm
 	// begin inline asm
 	mov.u16 %rs53, %rs52;
-	@%p25 ld.global.b16 { %rs53 }, [ %rd216 + 0 ];
+	@%p49 ld.global.b16 { %rs53 }, [ %rd216 + 0 ];
 	// end inline asm
 	// begin inline asm
 	mov.u16 %rs55, %rs52;
-	@%p26 ld.global.b16 { %rs55 }, [ %rd217 + 0 ];
+	@%p50 ld.global.b16 { %rs55 }, [ %rd217 + 0 ];
 	// end inline asm
 	// begin inline asm
 	mov.u16 %rs57, %rs52;
-	@%p27 ld.global.b16 { %rs57 }, [ %rd218 + 0 ];
+	@%p51 ld.global.b16 { %rs57 }, [ %rd218 + 0 ];
 	// end inline asm
 	// begin inline asm
 	mov.u16 %rs59, %rs52;
-	@%p28 ld.global.b16 { %rs59 }, [ %rd219 + 0 ];
+	@%p52 ld.global.b16 { %rs59 }, [ %rd219 + 0 ];
 	// end inline asm
 	// begin inline asm
 	mov.u16 %rs61, %rs52;
-	@%p29 ld.global.b16 { %rs61 }, [ %rd220 + 0 ];
+	@%p53 ld.global.b16 { %rs61 }, [ %rd220 + 0 ];
 	// end inline asm
 	// begin inline asm
 	mov.u16 %rs63, %rs52;
-	@%p30 ld.global.b16 { %rs63 }, [ %rd221 + 0 ];
+	@%p54 ld.global.b16 { %rs63 }, [ %rd221 + 0 ];
 	// end inline asm
 	// begin inline asm
 	mov.u16 %rs65, %rs52;
-	@%p31 ld.global.b16 { %rs65 }, [ %rd222 + 0 ];
+	@%p55 ld.global.b16 { %rs65 }, [ %rd222 + 0 ];
 	// end inline asm
 	bar.sync 	0;
 	st.shared.u16 	[%r30], %rs51;
@@ -941,131 +957,131 @@ $L__BB0_6:                              // %.lr.ph
 	.loc	1 82 36                         // implicit_gemm_kernel.py:82:36
 	// begin inline asm
 	mov.u16 %rs67, %rs52;
-	@%p32 ld.global.b16 { %rs67 }, [ %rd223 + 0 ];
+	@%p56 ld.global.b16 { %rs67 }, [ %rd223 + 0 ];
 	// end inline asm
 	// begin inline asm
 	mov.u16 %rs69, %rs52;
-	@%p33 ld.global.b16 { %rs69 }, [ %rd224 + 0 ];
+	@%p57 ld.global.b16 { %rs69 }, [ %rd224 + 0 ];
 	// end inline asm
 	// begin inline asm
 	mov.u16 %rs71, %rs52;
-	@%p34 ld.global.b16 { %rs71 }, [ %rd225 + 0 ];
+	@%p58 ld.global.b16 { %rs71 }, [ %rd225 + 0 ];
 	// end inline asm
 	// begin inline asm
 	mov.u16 %rs73, %rs52;
-	@%p35 ld.global.b16 { %rs73 }, [ %rd226 + 0 ];
+	@%p59 ld.global.b16 { %rs73 }, [ %rd226 + 0 ];
 	// end inline asm
 	// begin inline asm
 	mov.u16 %rs75, %rs52;
-	@%p36 ld.global.b16 { %rs75 }, [ %rd227 + 0 ];
+	@%p60 ld.global.b16 { %rs75 }, [ %rd227 + 0 ];
 	// end inline asm
 	// begin inline asm
 	mov.u16 %rs77, %rs52;
-	@%p37 ld.global.b16 { %rs77 }, [ %rd228 + 0 ];
+	@%p61 ld.global.b16 { %rs77 }, [ %rd228 + 0 ];
 	// end inline asm
 	// begin inline asm
 	mov.u16 %rs79, %rs52;
-	@%p38 ld.global.b16 { %rs79 }, [ %rd229 + 0 ];
+	@%p62 ld.global.b16 { %rs79 }, [ %rd229 + 0 ];
 	// end inline asm
 	// begin inline asm
 	mov.u16 %rs81, %rs52;
-	@%p39 ld.global.b16 { %rs81 }, [ %rd230 + 0 ];
+	@%p63 ld.global.b16 { %rs81 }, [ %rd230 + 0 ];
 	// end inline asm
 	// begin inline asm
 	mov.u16 %rs83, %rs52;
-	@%p40 ld.global.b16 { %rs83 }, [ %rd231 + 0 ];
+	@%p64 ld.global.b16 { %rs83 }, [ %rd231 + 0 ];
 	// end inline asm
 	// begin inline asm
 	mov.u16 %rs85, %rs52;
-	@%p41 ld.global.b16 { %rs85 }, [ %rd232 + 0 ];
+	@%p65 ld.global.b16 { %rs85 }, [ %rd232 + 0 ];
 	// end inline asm
 	// begin inline asm
 	mov.u16 %rs87, %rs52;
-	@%p42 ld.global.b16 { %rs87 }, [ %rd233 + 0 ];
+	@%p66 ld.global.b16 { %rs87 }, [ %rd233 + 0 ];
 	// end inline asm
 	// begin inline asm
 	mov.u16 %rs89, %rs52;
-	@%p43 ld.global.b16 { %rs89 }, [ %rd234 + 0 ];
+	@%p67 ld.global.b16 { %rs89 }, [ %rd234 + 0 ];
 	// end inline asm
 	// begin inline asm
 	mov.u16 %rs91, %rs52;
-	@%p44 ld.global.b16 { %rs91 }, [ %rd235 + 0 ];
+	@%p68 ld.global.b16 { %rs91 }, [ %rd235 + 0 ];
 	// end inline asm
 	// begin inline asm
 	mov.u16 %rs93, %rs52;
-	@%p45 ld.global.b16 { %rs93 }, [ %rd236 + 0 ];
+	@%p69 ld.global.b16 { %rs93 }, [ %rd236 + 0 ];
 	// end inline asm
 	// begin inline asm
 	mov.u16 %rs95, %rs52;
-	@%p46 ld.global.b16 { %rs95 }, [ %rd237 + 0 ];
+	@%p70 ld.global.b16 { %rs95 }, [ %rd237 + 0 ];
 	// end inline asm
 	// begin inline asm
 	mov.u16 %rs97, %rs52;
-	@%p47 ld.global.b16 { %rs97 }, [ %rd238 + 0 ];
+	@%p71 ld.global.b16 { %rs97 }, [ %rd238 + 0 ];
 	// end inline asm
 	// begin inline asm
 	mov.u16 %rs99, %rs52;
-	@%p48 ld.global.b16 { %rs99 }, [ %rd239 + 0 ];
+	@%p72 ld.global.b16 { %rs99 }, [ %rd239 + 0 ];
 	// end inline asm
 	// begin inline asm
 	mov.u16 %rs101, %rs52;
-	@%p49 ld.global.b16 { %rs101 }, [ %rd240 + 0 ];
+	@%p73 ld.global.b16 { %rs101 }, [ %rd240 + 0 ];
 	// end inline asm
 	// begin inline asm
 	mov.u16 %rs103, %rs52;
-	@%p50 ld.global.b16 { %rs103 }, [ %rd241 + 0 ];
+	@%p74 ld.global.b16 { %rs103 }, [ %rd241 + 0 ];
 	// end inline asm
 	// begin inline asm
 	mov.u16 %rs105, %rs52;
-	@%p51 ld.global.b16 { %rs105 }, [ %rd242 + 0 ];
+	@%p75 ld.global.b16 { %rs105 }, [ %rd242 + 0 ];
 	// end inline asm
 	// begin inline asm
 	mov.u16 %rs107, %rs52;
-	@%p52 ld.global.b16 { %rs107 }, [ %rd243 + 0 ];
+	@%p76 ld.global.b16 { %rs107 }, [ %rd243 + 0 ];
 	// end inline asm
 	// begin inline asm
 	mov.u16 %rs109, %rs52;
-	@%p53 ld.global.b16 { %rs109 }, [ %rd244 + 0 ];
+	@%p77 ld.global.b16 { %rs109 }, [ %rd244 + 0 ];
 	// end inline asm
 	// begin inline asm
 	mov.u16 %rs111, %rs52;
-	@%p54 ld.global.b16 { %rs111 }, [ %rd245 + 0 ];
+	@%p78 ld.global.b16 { %rs111 }, [ %rd245 + 0 ];
 	// end inline asm
 	// begin inline asm
 	mov.u16 %rs113, %rs52;
-	@%p55 ld.global.b16 { %rs113 }, [ %rd246 + 0 ];
+	@%p79 ld.global.b16 { %rs113 }, [ %rd246 + 0 ];
 	// end inline asm
 	// begin inline asm
 	mov.u16 %rs115, %rs52;
-	@%p56 ld.global.b16 { %rs115 }, [ %rd247 + 0 ];
+	@%p80 ld.global.b16 { %rs115 }, [ %rd247 + 0 ];
 	// end inline asm
 	// begin inline asm
 	mov.u16 %rs117, %rs52;
-	@%p57 ld.global.b16 { %rs117 }, [ %rd248 + 0 ];
+	@%p81 ld.global.b16 { %rs117 }, [ %rd248 + 0 ];
 	// end inline asm
 	// begin inline asm
 	mov.u16 %rs119, %rs52;
-	@%p58 ld.global.b16 { %rs119 }, [ %rd249 + 0 ];
+	@%p82 ld.global.b16 { %rs119 }, [ %rd249 + 0 ];
 	// end inline asm
 	// begin inline asm
 	mov.u16 %rs121, %rs52;
-	@%p59 ld.global.b16 { %rs121 }, [ %rd250 + 0 ];
+	@%p83 ld.global.b16 { %rs121 }, [ %rd250 + 0 ];
 	// end inline asm
 	// begin inline asm
 	mov.u16 %rs123, %rs52;
-	@%p60 ld.global.b16 { %rs123 }, [ %rd251 + 0 ];
+	@%p84 ld.global.b16 { %rs123 }, [ %rd251 + 0 ];
 	// end inline asm
 	// begin inline asm
 	mov.u16 %rs125, %rs52;
-	@%p61 ld.global.b16 { %rs125 }, [ %rd252 + 0 ];
+	@%p85 ld.global.b16 { %rs125 }, [ %rd252 + 0 ];
 	// end inline asm
 	// begin inline asm
 	mov.u16 %rs127, %rs52;
-	@%p62 ld.global.b16 { %rs127 }, [ %rd253 + 0 ];
+	@%p86 ld.global.b16 { %rs127 }, [ %rd253 + 0 ];
 	// end inline asm
 	// begin inline asm
 	mov.u16 %rs129, %rs52;
-	@%p63 ld.global.b16 { %rs129 }, [ %rd254 + 0 ];
+	@%p87 ld.global.b16 { %rs129 }, [ %rd254 + 0 ];
 	// end inline asm
 	st.shared.u16 	[%r38], %rs67;
 	st.shared.u16 	[%r39], %rs69;
@@ -1194,8 +1210,8 @@ $L__BB0_6:                              // %.lr.ph
 	add.s64 	%rd388, %rd388, %rd17;
 	add.s64 	%rd387, %rd387, %rd17;
 	add.s64 	%rd386, %rd386, %rd17;
-	setp.ne.s64 	%p106, %rd419, 0;
-	@%p106 bra 	$L__BB0_6;
+	setp.ne.s64 	%p122, %rd419, 0;
+	@%p122 bra 	$L__BB0_6;
 	bra.uni 	$L__BB0_7;
 $L__BB0_1:                              // %.._crit_edge_crit_edge
 	.loc	1 87 33                         // implicit_gemm_kernel.py:87:33
@@ -1243,16 +1259,16 @@ $L__BB0_8:                              // %._crit_edge
 	mul.wide.s32 	%rd352, %r536, 2;
 	add.s64 	%rd344, %rd193, %rd352;
 	.loc	1 91 62                         // implicit_gemm_kernel.py:91:62
-	setp.lt.s32 	%p132, %r574, %r104;
+	setp.lt.s32 	%p148, %r574, %r104;
 	.loc	1 91 8                          // implicit_gemm_kernel.py:91:8
-	and.pred  	%p116, %p140, %p132;
-	and.pred  	%p117, %p139, %p132;
-	and.pred  	%p118, %p138, %p132;
-	and.pred  	%p119, %p137, %p132;
-	and.pred  	%p120, %p136, %p132;
-	and.pred  	%p121, %p135, %p132;
-	and.pred  	%p122, %p134, %p132;
-	and.pred  	%p123, %p133, %p132;
+	and.pred  	%p132, %p156, %p148;
+	and.pred  	%p133, %p155, %p148;
+	and.pred  	%p134, %p154, %p148;
+	and.pred  	%p135, %p153, %p148;
+	and.pred  	%p136, %p152, %p148;
+	and.pred  	%p137, %p151, %p148;
+	and.pred  	%p138, %p150, %p148;
+	and.pred  	%p139, %p149, %p148;
 	.loc	1 99 12                         // implicit_gemm_kernel.py:99:12
 	bar.sync 	0;
 	shl.b32 	%r537, %r4, 4;
@@ -1269,9 +1285,9 @@ $L__BB0_8:                              // %._crit_edge
 	add.s32 	%r549, %r570, %r547;
 	shl.b32 	%r550, %r543, 1;
 	add.s32 	%r521, %r549, %r550;
-	mov.pred 	%p108, -1;
+	mov.pred 	%p124, -1;
 	// begin inline asm
-	@%p108 st.shared.b16 [ %r521 + 0 ], %rs171;
+	@%p124 st.shared.b16 [ %r521 + 0 ], %rs171;
 	// end inline asm
 	or.b32  	%r551, %r543, 8;
 	shr.u32 	%r552, %r551, 2;
@@ -1280,7 +1296,7 @@ $L__BB0_8:                              // %._crit_edge
 	add.s32 	%r555, %r554, %r550;
 	add.s32 	%r522, %r555, 16;
 	// begin inline asm
-	@%p108 st.shared.b16 [ %r522 + 0 ], %rs172;
+	@%p124 st.shared.b16 [ %r522 + 0 ], %rs172;
 	// end inline asm
 	or.b32  	%r556, %r543, 256;
 	shr.u32 	%r557, %r556, 2;
@@ -1289,7 +1305,7 @@ $L__BB0_8:                              // %._crit_edge
 	add.s32 	%r560, %r559, %r550;
 	add.s32 	%r523, %r560, 512;
 	// begin inline asm
-	@%p108 st.shared.b16 [ %r523 + 0 ], %rs175;
+	@%p124 st.shared.b16 [ %r523 + 0 ], %rs175;
 	// end inline asm
 	or.b32  	%r561, %r543, 264;
 	shr.u32 	%r562, %r561, 2;
@@ -1298,7 +1314,7 @@ $L__BB0_8:                              // %._crit_edge
 	add.s32 	%r565, %r564, %r550;
 	add.s32 	%r524, %r565, 528;
 	// begin inline asm
-	@%p108 st.shared.b16 [ %r524 + 0 ], %rs176;
+	@%p124 st.shared.b16 [ %r524 + 0 ], %rs176;
 	// end inline asm
 	bar.sync 	0;
 	shr.u32 	%r566, %r544, 2;
@@ -1311,16 +1327,16 @@ $L__BB0_8:                              // %._crit_edge
 	ld.shared.u16 	%rs146, [%r569+12];
 	bar.sync 	0;
 	// begin inline asm
-	@%p108 st.shared.b16 [ %r521 + 0 ], %rs173;
+	@%p124 st.shared.b16 [ %r521 + 0 ], %rs173;
 	// end inline asm
 	// begin inline asm
-	@%p108 st.shared.b16 [ %r522 + 0 ], %rs174;
+	@%p124 st.shared.b16 [ %r522 + 0 ], %rs174;
 	// end inline asm
 	// begin inline asm
-	@%p108 st.shared.b16 [ %r523 + 0 ], %rs177;
+	@%p124 st.shared.b16 [ %r523 + 0 ], %rs177;
 	// end inline asm
 	// begin inline asm
-	@%p108 st.shared.b16 [ %r524 + 0 ], %rs178;
+	@%p124 st.shared.b16 [ %r524 + 0 ], %rs178;
 	// end inline asm
 	bar.sync 	0;
 	ld.shared.u16 	%rs148, [%r569];
@@ -1329,35 +1345,35 @@ $L__BB0_8:                              // %._crit_edge
 	ld.shared.u16 	%rs154, [%r569+12];
 	// begin inline asm
 	mov.u16 %rs139, 0x0;
-	@%p116 atom.global.gpu.acq_rel.add.noftz.f16 %rs139, [ %rd337 + 0 ], %rs140;
+	@%p132 atom.global.gpu.acq_rel.add.noftz.f16 %rs139, [ %rd337 + 0 ], %rs140;
 	// end inline asm
 	// begin inline asm
 	mov.u16 %rs141, 0x0;
-	@%p117 atom.global.gpu.acq_rel.add.noftz.f16 %rs141, [ %rd338 + 0 ], %rs142;
+	@%p133 atom.global.gpu.acq_rel.add.noftz.f16 %rs141, [ %rd338 + 0 ], %rs142;
 	// end inline asm
 	// begin inline asm
 	mov.u16 %rs143, 0x0;
-	@%p118 atom.global.gpu.acq_rel.add.noftz.f16 %rs143, [ %rd339 + 0 ], %rs144;
+	@%p134 atom.global.gpu.acq_rel.add.noftz.f16 %rs143, [ %rd339 + 0 ], %rs144;
 	// end inline asm
 	// begin inline asm
 	mov.u16 %rs145, 0x0;
-	@%p119 atom.global.gpu.acq_rel.add.noftz.f16 %rs145, [ %rd340 + 0 ], %rs146;
+	@%p135 atom.global.gpu.acq_rel.add.noftz.f16 %rs145, [ %rd340 + 0 ], %rs146;
 	// end inline asm
 	// begin inline asm
 	mov.u16 %rs147, 0x0;
-	@%p120 atom.global.gpu.acq_rel.add.noftz.f16 %rs147, [ %rd341 + 0 ], %rs148;
+	@%p136 atom.global.gpu.acq_rel.add.noftz.f16 %rs147, [ %rd341 + 0 ], %rs148;
 	// end inline asm
 	// begin inline asm
 	mov.u16 %rs149, 0x0;
-	@%p121 atom.global.gpu.acq_rel.add.noftz.f16 %rs149, [ %rd342 + 0 ], %rs150;
+	@%p137 atom.global.gpu.acq_rel.add.noftz.f16 %rs149, [ %rd342 + 0 ], %rs150;
 	// end inline asm
 	// begin inline asm
 	mov.u16 %rs151, 0x0;
-	@%p122 atom.global.gpu.acq_rel.add.noftz.f16 %rs151, [ %rd343 + 0 ], %rs152;
+	@%p138 atom.global.gpu.acq_rel.add.noftz.f16 %rs151, [ %rd343 + 0 ], %rs152;
 	// end inline asm
 	// begin inline asm
 	mov.u16 %rs153, 0x0;
-	@%p123 atom.global.gpu.acq_rel.add.noftz.f16 %rs153, [ %rd344 + 0 ], %rs154;
+	@%p139 atom.global.gpu.acq_rel.add.noftz.f16 %rs153, [ %rd344 + 0 ], %rs154;
 	// end inline asm
 	.loc	1 93 4                          // implicit_gemm_kernel.py:93:4
 	ret;

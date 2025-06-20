@@ -168,6 +168,16 @@ void Conv3DKernels::load_kernel_map(std::string kernel_map_file) {
                       << value.dump() << std::endl;
         } else {
             kernel_map[key] = index;
+            std::vector<int> kidx;
+            for (const auto& k : value["kidx"]) {
+                kidx.push_back(k.get<int>());
+            }
+            std::vector<double> times;
+            for (const auto& time : value["time"]) {
+                times.push_back(time.get<double>());
+            }
+            kernel_times[key] = times;
+            kernel_indices[key] = kidx;
         }
     }
 }
@@ -179,6 +189,14 @@ void Conv3DKernels::save_kernel_map(std::string kernel_map_file) {
     json kmap;
     for (const auto& [key, index] : kernel_map) {
         auto [N, NPrime, D, DPrime, K, sm, acc_dtype, dtype] = key;
+        json idx_time;
+        for (const auto& time : kernel_times[key]) {
+            idx_time.push_back(time);
+        }
+        json kidx;
+        for (const auto& k : kernel_indices[key]) {
+            kidx.push_back(k);
+        }
         kmap.push_back({
             {"N", N},
             {"NPrime", NPrime},
@@ -189,6 +207,8 @@ void Conv3DKernels::save_kernel_map(std::string kernel_map_file) {
             {"acc_dtype", acc_dtype},
             {"dtype", dtype},
             {"index", index},
+            {"time", idx_time},
+            {"kidx", kidx},
             {"signature", kernels[index]->get_signature()}
         });
     }
@@ -230,6 +250,16 @@ Conv3DKernels::Conv3DKernels(
     load_kernel_map(ptx_dir + "/kernel_map.json");
 }
 
+int quant_N(int N) {
+    std::vector<int> thresholds = {1000, 10000, 100000, 600000};
+    for (size_t i = 0; i < thresholds.size(); ++i) {
+        if (N <= thresholds[i]) {
+            return thresholds[i];
+        }
+    }
+    return thresholds.back();
+}
+
 void Conv3DKernels::run(
     CUdeviceptr features, // [N, D]
     CUdeviceptr indices, // [N', K**3]
@@ -245,12 +275,14 @@ void Conv3DKernels::run(
     CUstream stream
 ) {
     // quantize N 
-    kernel_hash_t key = std::make_tuple(N / 2500, NPrime, D, DPrime, K, sm, acc_dtype, dtype);
+    kernel_hash_t key = std::make_tuple(quant_N(N), quant_N(NPrime), D, DPrime, K, sm, acc_dtype, dtype);
     
     if (kernel_map.find(key) == kernel_map.end()) {
         // Find a suitable kernel
         double best_time = 1e9;
         int best_kernel_index = -1;
+        std::vector<int> kidx;
+        std::vector<double> times;
         for (size_t i = 0; i < kernels.size(); ++i) {
             if (kernels[i]->can_run(N, NPrime, D, DPrime, K, acc_dtype, dtype)) {
                 double time = benchmark([&]() {
@@ -259,6 +291,8 @@ void Conv3DKernels::run(
                         N, NPrime, D, DPrime, K, stream
                     );
                 }, stream);
+                kidx.push_back(i);
+                times.push_back(time);
 
                 if (time < best_time) {
                     best_time = time;
@@ -280,8 +314,11 @@ void Conv3DKernels::run(
             throw std::runtime_error(oss.str());
         }
         kernel_map[key] = best_kernel_index;
+        kernel_times[key] = times;
+        kernel_indices[key] = kidx;
     }
     
     int index = kernel_map[key];
     kernels[index]->run(features, indices, weights, output, N, NPrime, D, DPrime, K, stream);
 }
+

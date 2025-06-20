@@ -64,9 +64,10 @@ public:
     std::string get_signature() const{
         std::ostringstream oss;
         oss << "{"
-            << "N: " << block_n << ", "
-            << "D: " << block_dp << ", "
-            << "K: " << block_k << ", "
+            << "BLOCK_N: " << block_n << ", "
+            << "BLOCK_Dp: " << block_dp << ", "
+            << "BLOCK_K: " << block_k << ", "
+            << "PARALLEL_K: " << parallel_k << ", "
             << "acc_dtype: " << acc_dtype << ", "
             << "dtype: " << dtype
             << "}";
@@ -158,11 +159,13 @@ double benchmark(
 
 
 class Conv3DKernels {
-    //  N, D, N', D', K, sm, acc_dtype, dtype
+    //  N, N', D, D', K, sm, acc_dtype, dtype
     using kernel_hash_t = std::tuple<int, int, int, int, int, int, std::string, std::string>;
 
     std::vector<std::unique_ptr<Conv3DImplicitGemmKernel>> kernels;
     std::map<kernel_hash_t, int> kernel_map;
+    std::map<kernel_hash_t, std::vector<double>> kernel_times;
+    std::map<kernel_hash_t, std::vector<int>> kernel_indices;
     std::string ptx_dir;
     std::string metadata;
     int sm;

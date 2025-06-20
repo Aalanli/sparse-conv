@@ -60,3 +60,5 @@ def test():
     compare_conv3d_subm(idx, 64, 64, 3)
     compare_conv3d_subm(idx, 128, 128, 3)
     compare_conv3d_subm(idx, 64, 128, 3)
+
+test()

@@ -7,6 +7,7 @@
 #include <c10/cuda/CUDAStream.h>
 #include <memory>
 #include <torch/script.h>
+#include <tuple>
 
 
 thread_local std::unique_ptr<Conv3DKernels> kernels = nullptr;
@@ -85,7 +86,6 @@ torch::Tensor conv3d_implicit_gemm_torch(
 
     return output;
 }
-
 
 TORCH_LIBRARY(conv3d_implicit_gemm, m) {
     m.def("setup_kernels", &setup_kernels);

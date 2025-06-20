@@ -137,10 +137,15 @@ def generate_ptx_from_configs(configs: list[Config], output_path: str = 'kernel_
         output_name = f"{config}.ptx"
         ccinfo = generate_ptx_from_config(config, output_name=os.path.join(output_path, output_name), ptx_version=ptx_version)
         ker_meta = ccinfo.metadata._asdict()
-        ker_meta['target'] = None # ker_meta['target'].asdict()
+        assert ker_meta["global_scratch_size"] == 0, "Global scratch size should be 0 for implicit conv3d kernel"
         meta[output_name] = {
             'config': config._asdict(),
-            'meta': ker_meta,
+            'meta': {
+                "shared": ker_meta['shared'],
+                "num_warps": ker_meta['num_warps'],
+                "num_stages": ker_meta['num_stages'],
+                "global_scratch_size": 0,
+            },
         }
     
     with open(os.path.join(output_path, 'meta.json'), 'w') as f:
