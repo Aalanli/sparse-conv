@@ -76,7 +76,8 @@ torch::Tensor conv3d_implicit_gemm_torch(
     torch::Tensor features, // [N, D]
     torch::Tensor indices, // [N', K**3]
     torch::Tensor weights, // [K**3, D, D']
-    int64_t K
+    int64_t K,
+    std::string acc_dtype
 ) {
     TORCH_CHECK(features.is_cuda(),  "features must be a CUDA tensor");
     TORCH_CHECK(indices.is_cuda() , "indices must be a CUDA tensor");
@@ -126,7 +127,7 @@ torch::Tensor conv3d_implicit_gemm_torch(
         double best_time = 1e9;
         int best_kernel_index = -1;
         for (size_t i = 0; i < kernels.size(); ++i) {
-            if (kernels[i]->can_run(N, NPrime, D, DPrime, K, dtype)) {
+            if (kernels[i]->can_run(N, NPrime, D, DPrime, K, acc_dtype, dtype)) {
                 double time = benchmark([&]() {
                     kernels[i]->run(
                         features_ptr, indices_ptr, weights_ptr, output_ptr,

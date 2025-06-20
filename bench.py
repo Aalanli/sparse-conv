@@ -206,7 +206,7 @@ def main():
     args = parser.parse_args()
 
     # list of implementations
-    implementations = [SpconvSubM, TorchsparseSubM, ImplicitGemmAccf16, ImplicitGemmAccf32, Conv3DSubmAot]
+    implementations = [SpconvSubM, TorchsparseSubM, Conv3DSubmAot]
 
     all_results = {}
     for impl in implementations:

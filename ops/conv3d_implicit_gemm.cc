@@ -1,5 +1,6 @@
 
 #include <cuda.h>
+#include <cuda_fp16.h>
 #include "json.hpp"
 #include <string>
 #include <cassert>
@@ -32,13 +33,15 @@ Conv3DImplicitGemmKernel::Conv3DImplicitGemmKernel(
     global_scratch_size = config["meta"]["global_scratch_size"];
     num_warps = config["meta"]["num_warps"];
 
-    block_n = config["config"]["block_sizes"]["BLOCK_N"];
-    block_k = config["config"]["block_sizes"]["BLOCK_K"];
-    block_dp = config["config"]["block_sizes"]["BLOCK_Dp"];
+    block_n = config["config"]["BLOCK_N"];
+    block_k = config["config"]["BLOCK_K"];
+    block_dp = config["config"]["BLOCK_Dp"];
     div_k = config["config"]["div_k"];
     div_d = config["config"]["div_d"];
     div_dp = config["config"]["div_dp"];
     dtype = config["config"]["dtype"];
+    parallel_k = config["config"]["parallel_k"];
+    acc_dtype = config["config"]["acc_dtype"];
     int sm = config["config"]["sm"];
     
     // Get current device
@@ -55,8 +58,8 @@ Conv3DImplicitGemmKernel::Conv3DImplicitGemmKernel(
 
     valid = (device_sm == sm);
     if (!valid) {
-        std::cerr << "Device SM " << device_sm << " is not equal to the required SM " << sm
-                  << ". Kernel will not be loaded from " << ptx_path << std::endl;
+        // std::cerr << "Device SM " << device_sm << " is not equal to the required SM " << sm
+        //           << ". Kernel will not be loaded from " << ptx_path << std::endl;
         return;
     }
 
@@ -102,7 +105,18 @@ void Conv3DImplicitGemmKernel::run(
     assert((!div_dp || DPrime % 16 == 0) && "DPrime must be divisible by 16 if div_dp is true");
 
     int threads = num_warps * 32;
-    int blocks = ((NPrime + block_n - 1) / block_n) * ((DPrime + block_dp - 1) / block_dp);
+    int blocks = ((NPrime + block_n - 1) / block_n) * ((DPrime + block_dp - 1) / block_dp) * parallel_k;
+
+    if (parallel_k > 1) {
+        int elems = NPrime * DPrime;
+        if (dtype == "fp16") {
+            cuMemsetD16Async(output, 0, elems, stream);
+        } else if (dtype == "fp32") {
+            cuMemsetD32Async(output, 0, elems, stream);
+        } else {
+            throw std::runtime_error("Unsupported dtype: " + dtype);
+        }
+    }
 
     // we dont have global scratch for now
     CUdeviceptr global_scratch;

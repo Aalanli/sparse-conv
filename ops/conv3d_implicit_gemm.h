@@ -25,6 +25,8 @@ class Conv3DImplicitGemmKernel {
     bool div_k;
     bool div_d;
     bool div_dp;
+    int parallel_k;
+    std::string acc_dtype;
     std::string dtype; // "fp16", "fp32"
     
     bool valid;
@@ -61,9 +63,10 @@ public:
         int D,
         int DPrime,
         int K,
+        std::string acc_dtype,
         std::string dtype
     ) const {
-        return valid && (dtype == this->dtype) &&
+        return valid && (dtype == this->dtype) && (acc_dtype == this->acc_dtype) &&
                (!div_k || K % 16 == 0) &&
                (!div_d || D % 16 == 0) &&
                (!div_dp || DPrime % 16 == 0);
