@@ -14,10 +14,9 @@ def run(coords, N, dim_in, dim_out, kernel_size, dtype, acc_dtype):
     return out
 
 
-# %%
-
 coords = get_voxel_coords(800_000, device="cuda")
 SEQS = [1000, 10000, 100_000, 600_000]
+# run(coords[:300], 300, 16, 16, 3, torch.float32, "fp32")
 
 for out_dtype in [torch.float32, torch.float16]:
     for acc_dtype in ['fp32', 'fp16']:

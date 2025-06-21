@@ -18,7 +18,6 @@ def generate_ptx(
     warps: int,
     stages: int,
     sm_version: int,
-    output_name: str = 'kernel.ptx',
     ptx_version: int | None = None
 ):
     attrs = {(i,): [['tt.divisibility', j]] for i, j in divisibility.items()}
@@ -28,11 +27,6 @@ def generate_ptx(
     if ptx_version is not None:
         opts['ptx_version'] = ptx_version
     ccker = triton.compile(src, target, options=opts)
-    with open(output_name, 'w') as f:
-        print("Compiled Triton kernel")
-        print(ccker.metadata)
-
-        f.write(ccker.asm['ptx'])
     return ccker
     
 
@@ -124,7 +118,6 @@ def generate_ptx_from_config(config: Config, output_name: str = 'kernel.ptx', pt
         warps=config.num_warps,
         stages=config.num_stages,
         sm_version=config.sm,
-        output_name=output_name,
         ptx_version=ptx_version
     )
 
@@ -132,13 +125,13 @@ def generate_ptx_from_config(config: Config, output_name: str = 'kernel.ptx', pt
 
 def generate_ptx_from_configs(configs: list[Config], output_path: str = 'kernel_ptx', ptx_version: int | None = None):
     os.makedirs(output_path, exist_ok=True)
-    meta = {}
+    meta = []
     for i, config in enumerate(configs):
         output_name = f"{config}.ptx"
         ccinfo = generate_ptx_from_config(config, output_name=os.path.join(output_path, output_name), ptx_version=ptx_version)
         ker_meta = ccinfo.metadata._asdict()
         assert ker_meta["global_scratch_size"] == 0, "Global scratch size should be 0 for implicit conv3d kernel"
-        meta[output_name] = {
+        meta.append({
             'config': config._asdict(),
             'meta': {
                 "shared": ker_meta['shared'],
@@ -146,16 +139,18 @@ def generate_ptx_from_configs(configs: list[Config], output_path: str = 'kernel_
                 "num_stages": ker_meta['num_stages'],
                 "global_scratch_size": 0,
             },
-        }
+            'ptx': ccinfo.asm['ptx'],            
+        })
     
     with open(os.path.join(output_path, 'meta.json'), 'w') as f:
         json.dump(meta, f, indent=4)
+    with open(os.path.join(output_path, 'kernel_map.json'), 'w') as f:
+        json.dump([], f, indent=4)  # Placeholder for kernel map, can be filled later
     print(f"Generated PTX files and metadata in {output_path}")
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Generate PTX files for implicit_conv3d_kernel with various configs.")
-    parser.add_argument('--output', type=str, default='kernel_ptx', help='Output directory for PTX files')
     parser.add_argument('--ptx_version', type=int, default=None, help='PTX version to use (optional)')
     args = parser.parse_args()
 
@@ -165,5 +160,5 @@ if __name__ == '__main__':
     configs.extend(load_configs(div_k=False, div_d=True,  div_dp=True , pk=2)) # fully divisible
     configs.extend(load_configs(div_k=False, div_d=False, div_dp=False, pk=2)) # not divisible
     
-    generate_ptx_from_configs(configs, output_path=args.output, ptx_version=args.ptx_version)
+    generate_ptx_from_configs(configs, output_path="ops", ptx_version=args.ptx_version)
 

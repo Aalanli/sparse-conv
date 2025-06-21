@@ -12,13 +12,15 @@
 
 thread_local std::unique_ptr<Conv3DKernels> kernels = nullptr;
 
-void setup_kernels(
-    std::string ptx_dir
-) {
-    kernels = std::make_unique<Conv3DKernels>(ptx_dir);
+void setup_kernels() {
+    if (kernels != nullptr) {
+        return; // Already set up
+    }
+    kernels = std::make_unique<Conv3DKernels>();
 }
 
 void save_kernel_map(std::string kernel_map_file) {
+    setup_kernels();
     kernels->save_kernel_map(kernel_map_file);
 }
 
@@ -29,6 +31,7 @@ torch::Tensor conv3d_implicit_gemm_torch(
     int64_t K,
     std::string acc_dtype
 ) {
+    setup_kernels();
     TORCH_CHECK(features.is_cuda(),  "features must be a CUDA tensor");
     TORCH_CHECK(indices.is_cuda() , "indices must be a CUDA tensor");
     TORCH_CHECK(weights.is_cuda() , "weights must be a CUDA tensor");
@@ -88,7 +91,6 @@ torch::Tensor conv3d_implicit_gemm_torch(
 }
 
 TORCH_LIBRARY(conv3d_implicit_gemm, m) {
-    m.def("setup_kernels", &setup_kernels);
     m.def("save_kernel_map", &save_kernel_map);
     m.def("conv3d_implicit_gemm_torch", &conv3d_implicit_gemm_torch);
 }

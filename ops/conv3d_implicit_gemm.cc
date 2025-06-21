@@ -13,6 +13,14 @@
 
 #include "conv3d_implicit_gemm.h"
 
+extern "C" {
+    extern const unsigned char _binary_meta_json_start[];
+    extern const unsigned char _binary_meta_json_end[];
+
+    extern const unsigned char _binary_kernel_map_json_start[];
+    extern const unsigned char _binary_kernel_map_json_end[];
+}
+
 using json = nlohmann::json;
 #define CHECK(call)                                               \
     do {                                                          \
@@ -28,7 +36,7 @@ using json = nlohmann::json;
     } while (0)
 
 Conv3DImplicitGemmKernel::Conv3DImplicitGemmKernel(
-    json config, std::string ptx_path
+    json config
 ) {
     shared = config["meta"]["shared"];
     global_scratch_size = config["meta"]["global_scratch_size"];
@@ -64,13 +72,8 @@ Conv3DImplicitGemmKernel::Conv3DImplicitGemmKernel(
         return;
     }
 
-    this->ptx_path = ptx_path;
-    std::ifstream ptx_file(ptx_path);
-    this->ptx = std::string(
-        (std::istreambuf_iterator<char>(ptx_file)),
-        std::istreambuf_iterator<char>()
-    );
-
+    
+    this->ptx = config["ptx"];
     assert(global_scratch_size == 0 && "global_scratch_size must be 0 for now");
 
     CHECK(cuModuleLoadDataEx(
@@ -145,13 +148,16 @@ void Conv3DImplicitGemmKernel::run(
     ));
 }
 
-void Conv3DKernels::load_kernel_map(std::string kernel_map_file) {
-    std::ifstream file(kernel_map_file);
-    if (!file.is_open()) {
-        std::cerr << "Cached kernel map file not found: " << kernel_map_file << std::endl;
-        return;
-    }
-    json kmap = json::parse(file);
+void Conv3DKernels::load_kernel_map() {
+    std::string kernel_map_json = std::string(
+        reinterpret_cast<const char*>(_binary_kernel_map_json_start),
+        _binary_kernel_map_json_end - _binary_kernel_map_json_start
+    );
+    load_kernel_map(kernel_map_json);
+}
+
+void Conv3DKernels::load_kernel_map(std::string kernel_map_json) {
+    json kmap = json::parse(kernel_map_json);
     for (auto& value : kmap) {
         int N = value["N"];
         int NPrime = value["NPrime"];
@@ -183,9 +189,6 @@ void Conv3DKernels::load_kernel_map(std::string kernel_map_file) {
 }
 
 void Conv3DKernels::save_kernel_map(std::string kernel_map_file) {
-    if (std::filesystem::exists(kernel_map_file)) {
-        load_kernel_map(kernel_map_file);
-    }
     json kmap;
     for (const auto& [key, index] : kernel_map) {
         auto [N, NPrime, D, DPrime, K, sm, acc_dtype, dtype] = key;
@@ -216,9 +219,7 @@ void Conv3DKernels::save_kernel_map(std::string kernel_map_file) {
     file << kmap.dump(4);
 }
 
-Conv3DKernels::Conv3DKernels(
-    std::string ptx_dir
-) {
+Conv3DKernels::Conv3DKernels() {
 
     int device = 0;
     CHECK(cuDeviceGet(&device, 0));
@@ -227,27 +228,22 @@ Conv3DKernels::Conv3DKernels(
     CHECK(cuDeviceGetAttribute(&device_minor, CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MINOR, device));
     sm = device_major * 10 + device_minor;
 
-    ptx_dir = std::filesystem::absolute(ptx_dir).string();
-    std::string config_path = ptx_dir + "/meta.json";
-    std::cout << "Loading kernels from: " << config_path << std::endl;
-    std::ifstream config_file (config_path);
     metadata = std::string(
-        (std::istreambuf_iterator<char>(config_file)),
-        std::istreambuf_iterator<char>()
+        reinterpret_cast<const char*>(_binary_meta_json_start),
+        _binary_meta_json_end - _binary_meta_json_start
     );
     json config = json::parse(
         metadata
     );
     
-    for (auto& [key, value] : config.items()) {
-        auto ptx_path = ptx_dir + "/" + key;
+    for (auto& value : config) {
         auto ker = new Conv3DImplicitGemmKernel(
-            value, ptx_path
+            value
         );
         kernels.push_back(std::unique_ptr<Conv3DImplicitGemmKernel>(ker));
     }
 
-    load_kernel_map(ptx_dir + "/kernel_map.json");
+    load_kernel_map();
 }
 
 int quant_N(int N) {

@@ -16,7 +16,6 @@
 using json = nlohmann::json;
 
 class Conv3DImplicitGemmKernel {
-    std::string ptx_path;
     std::string ptx;
 
     int shared;
@@ -38,7 +37,7 @@ class Conv3DImplicitGemmKernel {
     CUfunction func;
 public: 
     Conv3DImplicitGemmKernel(
-        json config, std::string ptx_path
+        json config
     );
 
     ~Conv3DImplicitGemmKernel();
@@ -166,14 +165,14 @@ class Conv3DKernels {
     std::map<kernel_hash_t, int> kernel_map;
     std::map<kernel_hash_t, std::vector<double>> kernel_times;
     std::map<kernel_hash_t, std::vector<int>> kernel_indices;
-    std::string ptx_dir;
     std::string metadata;
     int sm;
 public:
-    void load_kernel_map(std::string kernel_map_file);
+    void load_kernel_map();
+    void load_kernel_map(std::string kernel_map_json);
     void save_kernel_map(std::string kernel_map_file);
 
-    Conv3DKernels(std::string ptx_dir);
+    Conv3DKernels();
 
     void run(
         CUdeviceptr features, // [N, D]

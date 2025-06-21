@@ -3,24 +3,13 @@ from pathlib import Path
 import torch
 from torch import Tensor
 
-init = False
-
-def init_kernels():
-    global init
-    if init:
-        return
-    torch.ops.conv3d_implicit_gemm.setup_kernels(str(Path(__file__).parent.parent / 'kernel_ptx'))
-    init = True
-
 
 def conv3d_implicit_gemm(input: Tensor, indices: Tensor, weight: Tensor, kernel_size: int, acc_dtype: str = "fp32") -> Tensor:
-    init_kernels()
     return torch.ops.conv3d_implicit_gemm.conv3d_implicit_gemm_torch(
         input, indices, weight, kernel_size, acc_dtype
     )
 
 
 def save_kernel_map():
-    init_kernels()
-    torch.ops.conv3d_implicit_gemm.save_kernel_map(str(Path(__file__).parent.parent / 'kernel_ptx' / 'kernel_map.json'))
+    torch.ops.conv3d_implicit_gemm.save_kernel_map(str(Path(__file__).parent / 'kernel_map.json'))
 
