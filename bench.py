@@ -148,7 +148,7 @@ class NaiveConv3D(ImplBase):
         return out
 
 
-
+@torch.no_grad
 def benchmark_impl(impl_cls: type[ImplBase], Ns, Ds, warmup=10, runs=50, device='cuda', dtype=torch.float16):
     results = {D: [] for D in Ds}
     vox_coords = get_voxel_coords(max_seq=max(Ns), device=device)

@@ -151,7 +151,7 @@ def generate_ptx_from_configs(configs: list[Config], output_path: str = 'kernel_
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Generate PTX files for implicit_conv3d_kernel with various configs.")
-    parser.add_argument('--ptx_version', type=int, default=None, help='PTX version to use (optional)')
+    parser.add_argument('--ptx_version', type=int, default=82, help='PTX version to use (optional)')
     args = parser.parse_args()
 
     configs = list()
