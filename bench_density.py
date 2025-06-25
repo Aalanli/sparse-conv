@@ -54,6 +54,9 @@ N = 400_000
 K = 3
 
 coords = get_voxel_coords(max_seq=N, device='cuda')
+print("bench indices", do_bench(lambda: idx_gen.gen_conv3d_subm_indices(coords, K)))
+print("bench indices v2", do_bench(lambda: idx_gen.gen_conv3d_subm_indices_v2(coords, K)))
+
 idx = idx_gen.gen_conv3d_subm_indices(coords, K)
 perm = torch.randperm(idx.size(0))
 idx_perm = idx[perm]
