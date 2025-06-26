@@ -110,9 +110,10 @@ def implicit_conv3d_kernel(
 )
 @triton.jit
 def implicit_gemm_idx_sort_kernel(
-    indices, # [K**3, N]
+    indices, # [K**3, N] maybe strided in N
     lin_mask, # [N]
     N,
+    N_stride,
     K3,
     BLOCK_K: tl.constexpr,  # kernel size
     mask_dtype: tl.constexpr, # int32 / int64
@@ -122,7 +123,7 @@ def implicit_gemm_idx_sort_kernel(
 
     offset_n = (pid * BLOCK_N + tl.arange(0, BLOCK_N))
     offset_k = tl.arange(0, BLOCK_K)
-    idx_ptr = indices + ((offset_k[:, None] * N + offset_n[None, :]))
+    idx_ptr = indices + ((offset_k[:, None] * N_stride + offset_n[None, :]))
     idx_mask = (offset_k[:, None] < K3) & (offset_n[None, :] < N)
     # [BLOCK_K, BLOCK_N]
     inds = tl.load(idx_ptr, mask=idx_mask, other=-1)
@@ -150,6 +151,7 @@ def implicit_gemm_mask_kernel(
     indices, # [K**3, N]
     mask, # [N', K**3]
     N,
+    stride_n,
     K: tl.constexpr,  # kernel size
     BLOCK_N: tl.constexpr,  # tile size for N
     BLOCK_K: tl.constexpr,
@@ -159,7 +161,7 @@ def implicit_gemm_mask_kernel(
     offset_n = (pid * BLOCK_N + tl.arange(0, BLOCK_N))
     offset_k = tl.arange(0, BLOCK_K)
     for i in range(0, K3, BLOCK_K):
-        ptr_i = indices + ((offset_k + i)[:, None] * N + offset_n[None, :])
+        ptr_i = indices + ((offset_k + i)[:, None] * stride_n + offset_n[None, :])
         # [BLOCK_K, BLOCK_N]
         inds = tl.load(ptr_i, mask=(offset_k + i < K3)[:, None] & (offset_n < N)[None, :], other=-1)
         imask = tl.reduce((inds < N) & (inds >= 0), 1, or_combine) # [BLOCK_K]
@@ -191,13 +193,14 @@ def implicit_gemm_mask_kernel(
 @triton.jit
 def implicit_conv3d_kernel_T(
     features,  # [N, D]
-    indices,  # [K**3, N']
+    indices,  # [K**3, N'] may be strided in N'
     mask_ind, # [NP, K**3]
     weights,  # [K**3, D, D']
     out_perm, # [N']
     output,  # [N', D']
     N,
     N_prime,
+    N_prime_stride,
     D,
     D_prime,
     K,
@@ -225,7 +228,7 @@ def implicit_conv3d_kernel_T(
         mask_i = tl.load(mask_ind + k + pid_n * stride_k)
         if mask_i:
             # tl.device_print("inds", inds)
-            inds = tl.load(ind_ptr + k * N_prime, mask=(tl.arange(0, BLOCK_N) + pid_n * BLOCK_N) < N_prime, other=-1)
+            inds = tl.load(ind_ptr + k * N_prime_stride, mask=(tl.arange(0, BLOCK_N) + pid_n * BLOCK_N) < N_prime, other=-1)
             for ki in range(tl.cdiv(D, BLOCK_K)):
                 offset_k = k * D + ki * BLOCK_K
 

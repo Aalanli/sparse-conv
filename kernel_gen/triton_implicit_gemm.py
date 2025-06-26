@@ -1,6 +1,6 @@
 # %%
 import torch
-from implicit_gemm_kernel import implicit_conv3d_kernel, implicit_conv3d_kernel_T, implicit_gemm_mask_kernel, implicit_gemm_idx_sort_kernel
+from kernel_gen.implicit_gemm_kernel import implicit_conv3d_kernel, implicit_conv3d_kernel_T, implicit_gemm_mask_kernel, implicit_gemm_idx_sort_kernel
 from triton import cdiv
 import triton.language as tl
 
@@ -38,10 +38,12 @@ def sort_indices(indices: torch.Tensor):
     else:
         raise ValueError(f"Unsupported K3 size: {K3}")
     grid = lambda meta: (cdiv(N_prime, meta["BLOCK_N"]),)
+    N_stride = indices.stride(0)
     implicit_gemm_idx_sort_kernel[grid](
         indices,  # [K**3, N']
         sort_inds,  # [N']
         N_prime,
+        N_stride,
         K3,
         BLOCK_K,
         mask_dtype=sort_dtype,
@@ -67,12 +69,13 @@ def conv3d_implicit_gemm_T(
         indices, inv = sort_indices(indices)
     else:
         inv = None
-
+    N_prime_stride = indices.stride(0)
     mask_i = torch.empty((NP, K3), device=feats.device, dtype=torch.bool)    
     implicit_gemm_mask_kernel[(NP,)](
         indices,  # [K**3, N']
         mask_i,  # [NP, K**3]
         N_prime,
+        N_prime_stride,
         kernel_size,
         BLOCK_N
     )
@@ -91,6 +94,7 @@ def conv3d_implicit_gemm_T(
         out, # [N', D']
         N,
         N_prime,
+        N_prime_stride, 
         D,
         D_Prime,
         kernel_size,
@@ -99,3 +103,4 @@ def conv3d_implicit_gemm_T(
         sorted=sort
     )
     return out
+

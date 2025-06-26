@@ -1,4 +1,3 @@
-# Copyright (c) 2025 Waabi Innovation. All rights reserved.
 # %%
 import pytest
 import torch

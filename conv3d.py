@@ -1,4 +1,3 @@
-# Copyright (c) 2021 Waabi Innovation. All rights reserved.
 from typing import List, Optional
 
 import torch

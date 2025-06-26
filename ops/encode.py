@@ -1,4 +1,3 @@
-# Copyright (c) 2021 Waabi Innovation. All rights reserved.
 import torch
 from torch import Tensor
 

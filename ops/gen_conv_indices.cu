@@ -432,8 +432,11 @@ extern "C" void generate_conv3d_indices_kernel_gpu(const int *coords,  // (N, 4)
 }
 
 
-template <int K>
-__launch_bounds__(K*32) __global__ void generate_conv3d_subm_indices_kernel_3(const int *coords,
+
+
+template <int K, int KN>
+__launch_bounds__(KN*32) __global__ void generate_conv3d_subm_indices_kernel_v2(
+                                                    const int *coords,   // (N, 4)
                                                     uint64_t *hash_key,  // (T,)
                                                     int *hash_value,     // (T,)
                                                     int *indices,        // (K ** 3, N)
@@ -449,7 +452,7 @@ __launch_bounds__(K*32) __global__ void generate_conv3d_subm_indices_kernel_3(co
 
     const int ni = lane_id + blockIdx.x * items;
     if (ni < N && warp_id == 0) {
-        coords_s[lane_id] = ((int4*) &coords)[ni];
+        coords_s[lane_id] = ((int4*) coords)[ni];
     } else if (ni >= N) {
         return;
     }
@@ -461,8 +464,9 @@ __launch_bounds__(K*32) __global__ void generate_conv3d_subm_indices_kernel_3(co
     int y = coord4.z;
     int z = coord4.w;
 
+    bool mask_val = false;
     #pragma unroll
-    for (int offset = warp_id; offset < K * K * K; offset += K) {
+    for (int offset = warp_id; offset < K * K * K; offset += KN) {
         const int dz = offset % K;
         const int dy = (offset / K) % K;
         const int dx = offset / (K * K);
@@ -470,20 +474,22 @@ __launch_bounds__(K*32) __global__ void generate_conv3d_subm_indices_kernel_3(co
         int new_y = y + dy - K / 2;
         int new_z = z + dz - K / 2;
         
+        int found_index;
         if (new_x < 0 || new_y < 0 || new_z < 0) {
-            // indices[idx * K * K * K + offset] = -1;  // Not found
-            continue;                                  // Skip out of bounds
+            found_index = -1;
+        } else {
+            int new_coord[4] = {b, new_x, new_y, new_z};
+            uint64_t packed_new_coord = pack_coords_device(new_coord);    
+            found_index = lookup_hashtable(packed_new_coord, hash_key, hash_value, T, lookup_tries);
         }
-    
-        int new_coord[4] = {b, new_x, new_y, new_z};
-        uint64_t packed_new_coord = pack_coords_device(new_coord);
-    
-        int found_index = lookup_hashtable(packed_new_coord, hash_key, hash_value, T, lookup_tries);
+        
         if (found_index == -2) {
             atomicAdd(dropped_points, 1);
         } else {
             indices[offset * N + ni] = found_index;
         }
+
+        mask_val |= (found_index != -1);
     }
 }
 
@@ -497,6 +503,7 @@ torch::Tensor generate_conv3d_subm_indicesV2(torch::Tensor &coords, int64_t K, d
     int64_t N = coords.size(0);
     auto options = torch::TensorOptions().dtype(torch::kInt32).device(coords.device());
     auto indices = torch::empty({K * K * K, N}, options);
+
     
     if (coords.device().is_cuda()) {
         at::cuda::CUDAGuard device_guard(coords.device());
@@ -507,8 +514,6 @@ torch::Tensor generate_conv3d_subm_indicesV2(torch::Tensor &coords, int64_t K, d
         TORCH_CHECK(T > N * 2, "Hash table size must be greater than number of coordinates * 2");
 
         auto dropped_points = torch::zeros({1}, torch::TensorOptions().dtype(torch::kInt32).device(coords.device()));
-        indices.fill_(-1);
-
         auto hash_keys = torch::empty({T}, torch::TensorOptions().dtype(torch::kInt64).device(coords.device()));
         hash_keys.fill_(-1);
         auto hash_values = torch::empty({T}, torch::TensorOptions().dtype(torch::kInt32).device(coords.device()));
@@ -521,9 +526,15 @@ torch::Tensor generate_conv3d_subm_indicesV2(torch::Tensor &coords, int64_t K, d
                                         (int*) hash_values.data_ptr(), N,
                                                                                 T, lookup_tries, (int*) dropped_points.data_ptr());
 
+        int threads = 32 * K * K;
+        int blocks_ = ((N + 32 - 1) / 32);
         if (K == 3) {
-            int threads = 32 * K;
-            generate_conv3d_subm_indices_kernel_3<3><<<((N + 32 - 1) / 32), threads, 0, stream>>>(
+            generate_conv3d_subm_indices_kernel_v2<3, 9><<<blocks_, threads, 0, stream>>>(
+                (int *)coords.data_ptr(), (uint64_t *)hash_keys.data_ptr(), (int *)hash_values.data_ptr(),
+                (int *)indices.data_ptr(), N, T, lookup_tries, (int*) dropped_points.data_ptr()
+            );
+        } else if (K == 5) {
+            generate_conv3d_subm_indices_kernel_v2<5, 25><<<blocks_, threads, 0, stream>>>(
                 (int *)coords.data_ptr(), (uint64_t *)hash_keys.data_ptr(), (int *)hash_values.data_ptr(),
                 (int *)indices.data_ptr(), N, T, lookup_tries, (int*) dropped_points.data_ptr()
             );
@@ -539,6 +550,198 @@ torch::Tensor generate_conv3d_subm_indicesV2(torch::Tensor &coords, int64_t K, d
     }
 
     return indices;
+}
+
+
+template <int THREADS>
+__global__ void generate_conv3d_indices_kernel_one_stage_v2(const int *coords,  // (N, 4)
+                                                         int *new_coords,    // (N', 4)
+                                                         int *indices,       // (K * K * K, N')
+
+                                                         int *global_offset,         // (1,) init = 0
+                                                         uint64_t *hash_keys,        // (T,) init = -1
+                                                         volatile int *hash_values,  // (T,) init = -1
+
+                                                         const int N,  // number of coordinates
+                                                         const int Nprime,
+                                                         const int K,  // kernel size
+                                                         const int T, const int3 stride, const int3 pad,
+                                                         const int3 bounds,
+                                                         const int lookup_tries,
+                                                         int* dropped_points) {
+    const int KerStride = K * K * K;
+    const int tid = (blockIdx.x * blockDim.x + threadIdx.x);
+    const int idx = tid / KerStride;
+    const int offset = tid % KerStride;
+    const int dx = offset / (K * K);
+    const int dy = offset / K % K;
+    const int dz = offset % K;
+
+    int4 coord4 = (idx < N) ? ((int4 *)coords)[idx] : int4();
+    int b = coord4.x;
+    int x = coord4.y;
+    int y = coord4.z;
+    int z = coord4.w;
+    bool exists = idx < N;
+    exists &= (x + pad.x - dx) % stride.x == 0 && x + pad.x - dx >= 0;
+    exists &= (y + pad.y - dy) % stride.y == 0 && y + pad.y - dy >= 0;
+    exists &= (z + pad.z - dz) % stride.z == 0 && z + pad.z - dz >= 0;
+    int new_x = (x + pad.x - dx) / stride.x;
+    int new_y = (y + pad.y - dy) / stride.y;
+    int new_z = (z + pad.z - dz) / stride.z;
+    exists &= !(new_x < 0 || new_y < 0 || new_z < 0 || new_x >= bounds.x || new_y >= bounds.y || new_z >= bounds.z);
+    // this boundary condition may drop points unexpectedly (without the correct pad)
+    // this is to replicate torchsparse behavior
+    exists &= new_x * stride.x + K - 1 < bounds.x + 2 * pad.x;
+    exists &= new_y * stride.y + K - 1 < bounds.y + 2 * pad.y;
+    exists &= new_z * stride.z + K - 1 < bounds.z + 2 * pad.z;
+    // printv([=]() {printf("exists %d (%d, %d, %d)", exists, new_x, new_y, new_z);});
+    int new_coord[4] = {b, new_x, new_y, new_z};
+    auto packed_new_coord = pack_coords_device(new_coord);
+    // optimization opportunity here to first write to shared
+    auto hash = fmix64(packed_new_coord);
+    int hash_idx = hash % T;
+    uint64_t hkey = 0;
+    if (exists) {  // skip for all items that does not exist
+        int lookups = 0;
+        while (lookups < lookup_tries) {
+            hkey = atomicCAS((unsigned long long *)hash_keys + hash_idx, EMPTY_HASH, packed_new_coord);
+            if (hkey == packed_new_coord || hkey == EMPTY_HASH) {
+                break;
+            }
+            hash_idx = (hash_idx + 1) % T;
+            lookups += 1;
+        }
+
+        if (lookups >= lookup_tries) {
+            atomicAdd(dropped_points, 1);
+            exists = false;
+        }
+    }
+    // if hkey == EMPTY_HASH, then this thread inserts into the hashmap
+    __shared__ int local_offset_shared;
+    // a thread that does not "Exist" can never trigger
+    int local_offset = (hkey == EMPTY_HASH) ? 1 : 0;
+
+    int offset_final;
+    using blockscan = cub::BlockScan<int, THREADS>;
+    __shared__ typename blockscan::TempStorage temp_storage;
+    blockscan(temp_storage).ExclusiveSum(local_offset, offset_final);
+    // printv([=]() { printf("%d, %d", local_offset, offset_final); });
+    if (threadIdx.x == blockDim.x - 1) {
+        local_offset_shared = atomicAdd(global_offset, offset_final + local_offset);
+    }
+    __syncthreads();
+    offset_final += local_offset_shared;
+    if (hkey == EMPTY_HASH) {
+        hash_values[hash_idx] = offset_final;
+    } else if (exists) {
+        int lookups = 0;
+        while (lookups < lookup_tries) {
+            offset_final = hash_values[hash_idx];
+            if (offset_final != -1) {
+                break;
+            }
+            lookups += 1;
+        }
+        if (lookups >= lookup_tries) {
+            exists = false; // exceeded maximum lookups, do not write 
+            atomicAdd(dropped_points, 1);
+        }
+    }
+    // printv([=]() {printf("offset_final %d, idx  %d, offset %d", offset_final, idx, offset);});
+    if (offset_final < Nprime && exists && idx < N) {
+        indices[offset_final + offset * Nprime] = idx;
+        ((int4 *)new_coords)[offset_final] = *(int4 *)new_coord;
+    }
+}
+
+
+
+std::tuple<torch::Tensor, torch::Tensor> generate_conv3d_indices_v2(const torch::Tensor coords,  // (N, 4)
+                                                                 const int64_t batch_size, const int64_t K,
+                                                                 const int64_t stride_x, const int64_t stride_y,
+                                                                 const int64_t stride_z, const int64_t pad_x,
+                                                                 const int64_t pad_y, const int64_t pad_z,
+                                                                 const int64_t max_x, const int64_t max_y,
+                                                                 const int64_t max_z, double hash_table_multiplier, int64_t threads, int64_t lookup_tries) {
+    TORCH_CHECK(coords.dim() == 2 && coords.size(1) == 4, "coords must be of shape (N, 4)");
+    TORCH_CHECK(coords.dtype() == torch::kInt32, "coords must be of dtype int32");
+    TORCH_CHECK(K > 0, "Kernel size K must be positive");
+    TORCH_CHECK(stride_x > 0, "Stride must be positive");
+    TORCH_CHECK(stride_y > 0, "Stride must be positive");
+    TORCH_CHECK(stride_z > 0, "Stride must be positive");
+    TORCH_CHECK(pad_x >= 0, "Padding must be non-negative");
+    TORCH_CHECK(pad_y >= 0, "Padding must be non-negative");
+    TORCH_CHECK(pad_z >= 0, "Padding must be non-negative");
+    TORCH_CHECK(max_x >= 0 && max_y >= 0 && max_z >= 0, "Max coordinates must be non-negative");
+
+    int64_t N = coords.size(0);
+    int num_x = std::max(max_x + 2 * pad_x - K, 0l) / stride_x + 1;
+    int num_y = std::max(max_y + 2 * pad_y - K, 0l) / stride_y + 1;
+    int num_z = std::max(max_z + 2 * pad_z - K, 0l) / stride_z + 1;
+
+    // number of additional points each non-zero point can theoretically add, alone each dimension
+    int num_Kx = (K + stride_x - 1) / stride_x;
+    int num_Ky = (K + stride_y - 1) / stride_y;
+    int num_Kz = (K + stride_z - 1) / stride_z;
+    
+    // theoretical maximum number of indices
+    int NPrime = std::min(N * num_Kx * num_Ky * num_Kz, num_x * num_y * num_z * batch_size);
+
+    auto options = torch::TensorOptions().dtype(torch::kInt32).device(coords.device());
+    auto new_coords = torch::empty({NPrime, 4}, options);
+    auto indices = torch::empty({K * K * K, NPrime}, options);
+    // treat -1 as zero/null indices
+    indices.fill_(-1);
+
+    int3 stride = {static_cast<int>(stride_x), static_cast<int>(stride_y), static_cast<int>(stride_z)};
+    int3 pad = {static_cast<int>(pad_x), static_cast<int>(pad_y), static_cast<int>(pad_z)};
+    int3 max_coords = {static_cast<int>(max_x), static_cast<int>(max_y), static_cast<int>(max_z)};
+
+    if (coords.device().is_cuda()) {
+        // Call the GPU implementation
+        int T = static_cast<int>(NPrime * hash_table_multiplier);
+        // TODO: tune T so it's not too big
+        // this is data dependent. If T is too small, the kernel gets stuck
+        // TODO: make kernel resilient to T being too small
+        // TORCH_CHECK(hash_table_multiplier > 1, "Hash table multiplier must be > 1");
+        // TORCH_CHECK(T > NPrime, "Hash table size must be greater than number of coordinates * 2");
+
+        auto global_offset = torch::empty({2}, torch::TensorOptions().dtype(torch::kInt32).device(coords.device()));
+        global_offset.fill_(0);
+
+        auto hash_keys = torch::empty({T}, torch::TensorOptions().dtype(torch::kInt64).device(coords.device()));
+        hash_keys.fill_(-1);
+        auto hash_values = torch::empty({T}, torch::TensorOptions().dtype(torch::kInt32).device(coords.device()));
+        hash_values.fill_(-1);
+        
+        int threads = 256;
+        int blocks = (N * K * K * K + threads - 1) / threads;
+        generate_conv3d_indices_kernel_one_stage_v2<256><<<blocks, threads, 0, at::cuda::getCurrentCUDAStream().stream()>>>(
+            coords.data_ptr<int>(), new_coords.data_ptr<int>(), indices.data_ptr<int>(),
+            global_offset.data_ptr<int>(), (uint64_t*) hash_keys.data_ptr(), hash_values.data_ptr<int>(),
+            N, NPrime, K, T, stride, pad, max_coords, lookup_tries, global_offset.data_ptr<int>() + 1
+        );
+
+        int actual_NPrime = global_offset[0].item<int>();
+        int drooped_points = global_offset[1].item<int>();
+        if (drooped_points > 0) {
+            TORCH_CHECK(false, "Error: dropped points detected in generate_conv3d_indices (hash table overflow or collision).", drooped_points, " points were dropped.");
+        }
+        new_coords.resize_({actual_NPrime, 4});
+        // std::cout << indices << std::endl;
+        // indices.set_({K * K * K, actual_NPrime});
+        indices = indices.narrow(1, 0, actual_NPrime);
+        // std::cout << indices << std::endl;
+    } else {
+        // int64_t NPrime = generate_conv3d_indices_cpu(coords.data_ptr<int>(), new_coords.data_ptr<int>(),
+        //                                              indices.data_ptr<int>(), N, K, stride, pad, max_coords);
+        // new_coords.resize_({NPrime, 4});
+        // indices.resize_({NPrime, K * K * K});
+        throw std::runtime_error("CPU implementation is not supported for generate_conv3d_indices_v2");
+    }
+    return {new_coords, indices};
 }
 
 // returned indices that are null are filled with -1
@@ -671,4 +874,6 @@ TORCH_LIBRARY(convIdx, m) {
           &generate_conv3d_indices);
     m.def("generate_conv3d_subm_indices_v2",
           &generate_conv3d_subm_indicesV2);
+    m.def("generate_conv3d_indices_v2",
+          &generate_conv3d_indices_v2);
 }
