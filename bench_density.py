@@ -13,6 +13,8 @@ from triton.testing import do_bench
 from utils import get_voxel_coords
 import ops.idx_gen as idx_gen
 import ops.encode as encode
+from triton_spconv import conv3d_implicit_gemm, conv3d_implicit_gemm_T
+import triton.language as tl
 
 
 def get_indices(N, K, density):
@@ -21,12 +23,16 @@ def get_indices(N, K, density):
     indices = torch.where(flip, indices, -1)
     return indices.int()
 
-def benchmark_indices(indices, D, run_once=False):
+def benchmark_indices(indices, D, transposed=False, run_once=False, acc_dtype=tl.float16):
     _, K1 = indices.shape
     N = (indices.max() + 1).item()
     feats = torch.randn(N, D, device='cuda', dtype=torch.float16)
     weights = torch.randn(K1, D, D, device='cuda', dtype=torch.float16)
-    f = lambda: igemm.conv3d_implicit_gemm(feats, indices, weights, K)
+    if transposed:
+        indices = indices.T.contiguous()
+        f = lambda: conv3d_implicit_gemm_T(feats, indices, weights, K, acc_dtype=acc_dtype, sort=False)
+    else:
+        f = lambda: conv3d_implicit_gemm(feats, indices, weights, K, acc_dtype=acc_dtype)
     if run_once:
         f()
         return 0.0
@@ -52,8 +58,15 @@ def sort_indices_encode(indices, coords):
 
 N = 400_000
 K = 3
+D = 32
 
 coords = get_voxel_coords(max_seq=N, device='cuda')
+
+idx1 = idx_gen.gen_conv3d_subm_indices(coords, K)
+idx2 = idx_gen.gen_conv3d_subm_indices_v2(coords, K).T
+print((idx1 == idx2).all().item())
+
+# %%
 print("bench indices", do_bench(lambda: idx_gen.gen_conv3d_subm_indices(coords, K)))
 print("bench indices v2", do_bench(lambda: idx_gen.gen_conv3d_subm_indices_v2(coords, K)))
 
@@ -65,10 +78,18 @@ sidx2 = sort_indices_encode(idx, coords)
 
 
 run_once = False
-print(benchmark_indices(idx,      128, run_once=run_once))
-print(benchmark_indices(sidx,     128, run_once=run_once))
-print(benchmark_indices(idx_perm, 128, run_once=run_once))
-print(benchmark_indices(sidx2,    128, run_once=run_once))
+acc_dtype = tl.float32
+
+print(benchmark_indices(idx,      D, run_once=run_once, acc_dtype=acc_dtype))
+print(benchmark_indices(sidx,     D, run_once=run_once, acc_dtype=acc_dtype))
+print(benchmark_indices(idx_perm, D, run_once=run_once, acc_dtype=acc_dtype))
+print(benchmark_indices(sidx2,    D, run_once=run_once, acc_dtype=acc_dtype))
+
+
+print(benchmark_indices(idx,      D, True, run_once=run_once, acc_dtype=acc_dtype))
+print(benchmark_indices(sidx,     D, True, run_once=run_once, acc_dtype=acc_dtype))
+print(benchmark_indices(idx_perm, D, True, run_once=run_once, acc_dtype=acc_dtype))
+print(benchmark_indices(sidx2,    D, True, run_once=run_once, acc_dtype=acc_dtype))
 
 def calculate_skipped_zeros(indices, tile_size):
     N, K1 = indices.shape

@@ -432,43 +432,44 @@ extern "C" void generate_conv3d_indices_kernel_gpu(const int *coords,  // (N, 4)
 }
 
 
-__global__ void generate_conv3d_subm_indices_kernel_3(const int *coords,
+template <int K>
+__launch_bounds__(K*32) __global__ void generate_conv3d_subm_indices_kernel_3(const int *coords,
                                                     uint64_t *hash_key,  // (T,)
                                                     int *hash_value,     // (T,)
-                                                    int *indices,        // (27, N)
+                                                    int *indices,        // (K ** 3, N)
                                                     const int N,         // number of coordinates
                                                     const int T,         // table size
                                                     const int lookup_tries,
                                                     int* dropped_points
 ) {
-    constexpr int K = 3;
     const unsigned int warp_id = threadIdx.x / 32;
     const unsigned int lane_id = threadIdx.x % 32;
-    const unsigned int nwarps = blockDim.x / 32;
-    const unsigned int items = nwarps / 3 * 32;
-    extern __shared__ int4 coords_s[]; // [items]
-    const int wi = lane_id + (warp_id / 3) * 32;
-    const int ni = wi + blockIdx.x * items;
-    if (ni < N && warp_id % 3 == 0) {
-        coords_s[wi] = ((int4*) &coords)[ni];
-    } else {
+    constexpr unsigned int items = 32;
+    __shared__ int4 coords_s[items]; // [items]
+
+    const int ni = lane_id + blockIdx.x * items;
+    if (ni < N && warp_id == 0) {
+        coords_s[lane_id] = ((int4*) &coords)[ni];
+    } else if (ni >= N) {
         return;
     }
     __syncthreads();
-    int4 coord4 = coords_s[wi];
+    int4 coord4 = coords_s[lane_id];
 
     int b = coord4.x;
     int x = coord4.y;
     int y = coord4.z;
     int z = coord4.w;
 
-    for (int offset = warp_id % 3; offset < 27; offset += 3) {
+    #pragma unroll
+    for (int offset = warp_id; offset < K * K * K; offset += K) {
         const int dz = offset % K;
         const int dy = (offset / K) % K;
         const int dx = offset / (K * K);
         int new_x = x + dx - K / 2;
         int new_y = y + dy - K / 2;
         int new_z = z + dz - K / 2;
+        
         if (new_x < 0 || new_y < 0 || new_z < 0) {
             // indices[idx * K * K * K + offset] = -1;  // Not found
             continue;                                  // Skip out of bounds
@@ -487,7 +488,7 @@ __global__ void generate_conv3d_subm_indices_kernel_3(const int *coords,
 }
 
 
-std::tuple<torch::Tensor, torch::Tensor> generate_conv3d_subm_indicesV2(torch::Tensor &coords, int64_t K, double hash_table_multiplier, int64_t threads, int64_t lookup_tries) {
+torch::Tensor generate_conv3d_subm_indicesV2(torch::Tensor &coords, int64_t K, double hash_table_multiplier, int64_t threads, int64_t lookup_tries) {
     TORCH_CHECK(coords.dim() == 2 && coords.size(1) == 4, "coords must be of shape (N, 4)");
     TORCH_CHECK(coords.dtype() == torch::kInt32, "coords must be of dtype int32");
     TORCH_CHECK(K > 0, "Kernel size K must be positive");
@@ -495,8 +496,7 @@ std::tuple<torch::Tensor, torch::Tensor> generate_conv3d_subm_indicesV2(torch::T
 
     int64_t N = coords.size(0);
     auto options = torch::TensorOptions().dtype(torch::kInt32).device(coords.device());
-    auto indices = torch::empty({N, K * K * K}, options);
-    auto mask = torch::empty({N}, options.dtype(torch::kInt64));
+    auto indices = torch::empty({K * K * K, N}, options);
     
     if (coords.device().is_cuda()) {
         at::cuda::CUDAGuard device_guard(coords.device());
@@ -508,7 +508,6 @@ std::tuple<torch::Tensor, torch::Tensor> generate_conv3d_subm_indicesV2(torch::T
 
         auto dropped_points = torch::zeros({1}, torch::TensorOptions().dtype(torch::kInt32).device(coords.device()));
         indices.fill_(-1);
-        mask.fill_(0);
 
         auto hash_keys = torch::empty({T}, torch::TensorOptions().dtype(torch::kInt64).device(coords.device()));
         hash_keys.fill_(-1);
@@ -523,8 +522,8 @@ std::tuple<torch::Tensor, torch::Tensor> generate_conv3d_subm_indicesV2(torch::T
                                                                                 T, lookup_tries, (int*) dropped_points.data_ptr());
 
         if (K == 3) {
-            int threads = 32 * 9;
-            generate_conv3d_subm_indices_kernel_3<<<((N + 32 * 3 - 1) / (32 * 3)) * 3, threads, 16 * 3 * 32, stream>>>(
+            int threads = 32 * K;
+            generate_conv3d_subm_indices_kernel_3<3><<<((N + 32 - 1) / 32), threads, 0, stream>>>(
                 (int *)coords.data_ptr(), (uint64_t *)hash_keys.data_ptr(), (int *)hash_values.data_ptr(),
                 (int *)indices.data_ptr(), N, T, lookup_tries, (int*) dropped_points.data_ptr()
             );
@@ -539,7 +538,7 @@ std::tuple<torch::Tensor, torch::Tensor> generate_conv3d_subm_indicesV2(torch::T
         throw std::runtime_error("CPU implementation is not supported for generate_conv3d_subm_indicesV2");
     }
 
-    return {indices, mask};
+    return indices;
 }
 
 // returned indices that are null are filled with -1

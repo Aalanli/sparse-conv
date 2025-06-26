@@ -14,7 +14,7 @@ def gen_conv3d_subm_indices_v2(
     hash_map_multiplier: float = 4.0,
     threads: int = 128,
     lookup_tries: int = 32
-) -> tuple[Tensor, Tensor]:
+) -> Tensor:
     """
     Generate indices for 3D sparse convolution with submanifold sampling.
     Returns new_coords and indices.
