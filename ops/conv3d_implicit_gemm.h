@@ -1,17 +1,17 @@
 #pragma once
 #include <cuda.h>
 #include <cuda_runtime.h>
-#include "json.hpp"
-#include <string>
+
 #include <cassert>
-
-#include <iostream>
 #include <fstream>
-#include <sstream>
-#include <vector>
-#include <tuple>
+#include <iostream>
 #include <map>
+#include <sstream>
+#include <string>
+#include <tuple>
+#include <vector>
 
+#include "json.hpp"
 
 using json = nlohmann::json;
 
@@ -30,37 +30,27 @@ class Conv3DImplicitGemmKernel {
     bool div_dp;
     int parallel_k;
     std::string acc_dtype;
-    std::string dtype; // "fp16", "fp32"
-    
+    std::string dtype;  // "fp16", "fp32"
+
     bool valid;
     CUmodule mod;
     CUfunction func;
-public: 
-    Conv3DImplicitGemmKernel(
-        json config
-    );
+
+   public:
+    Conv3DImplicitGemmKernel(const json &config);
 
     ~Conv3DImplicitGemmKernel();
 
-    void run(
-        CUdeviceptr features, // [N, D]
-        CUdeviceptr indices, // [N', K**3]
-        CUdeviceptr weights, // [K**3, D, D']
-        CUdeviceptr output, // [N', D']
-        
-        int N,
-        int NPrime,
-        int D,
-        int DPrime,
-        int K,
-        CUstream stream
-    );
+    void run(CUdeviceptr features,  // [N, D]
+             CUdeviceptr indices,   // [N', K**3]
+             CUdeviceptr weights,   // [K**3, D, D']
+             CUdeviceptr output,    // [N', D']
 
-    std::string get_dtype() const {
-        return dtype;
-    }
+             int N, int NPrime, int D, int DPrime, int K, CUstream stream);
 
-    std::string get_signature() const{
+    std::string get_dtype() const { return dtype; }
+
+    std::string get_signature() const {
         std::ostringstream oss;
         oss << "{"
             << "BLOCK_N: " << block_n << ", "
@@ -68,33 +58,18 @@ public:
             << "BLOCK_K: " << block_k << ", "
             << "PARALLEL_K: " << parallel_k << ", "
             << "acc_dtype: " << acc_dtype << ", "
-            << "dtype: " << dtype
-            << "}";
+            << "dtype: " << dtype << "}";
         return oss.str();
     }
 
-    bool can_run(
-        int N,
-        int NPrime,
-        int D,
-        int DPrime,
-        int K,
-        std::string acc_dtype,
-        std::string dtype
-    ) const {
-        return valid && (dtype == this->dtype) && (acc_dtype == this->acc_dtype) &&
-               (!div_k || K % 16 == 0) &&
-               (!div_d || D % 16 == 0) &&
-               (!div_dp || DPrime % 16 == 0);
+    bool can_run(int N, int NPrime, int D, int DPrime, int K, std::string acc_dtype, std::string dtype) const {
+        return valid && (dtype == this->dtype) && (acc_dtype == this->acc_dtype) && (!div_k || K % 16 == 0) &&
+               (!div_d || D % 16 == 0) && (!div_dp || DPrime % 16 == 0);
     }
 };
 
-
 template <typename F>
-double record(
-    F&& func,
-    CUstream stream
-) {
+double record(F &&func, CUstream stream) {
     cudaEvent_t start, stop;
     cudaEventCreate(&start);
     cudaEventCreate(&stop);
@@ -110,21 +85,20 @@ double record(
 }
 
 template <typename F>
-double benchmark(
-    F&& func,
-    CUstream stream,
-    const int n_warmup = 3,
-    const double target_time = 30 // target time for recording
+double benchmark(F &&func, CUstream stream, const int n_warmup = 3,
+                 const double target_time = 30  // target time for recording
 ) {
+    // benchmark function inspired by triton
+    // for micro-benchmarking kernels, we should take care to invalidate the L2 cache
     // Warmup
     double approx_iter_time = record(
-        [&]() {
-            for (int64_t i = 0; i < n_warmup; ++i) {
-                func();
-            }
-        },
-        stream
-    ) / n_warmup;
+                                  [&]() {
+                                      for (int64_t i = 0; i < n_warmup; ++i) {
+                                          func();
+                                      }
+                                  },
+                                  stream) /
+                              n_warmup;
 
     int num_iterations = std::max(static_cast<int>(target_time / (approx_iter_time + 0.1)), 2);
 
@@ -156,7 +130,6 @@ double benchmark(
     return total_time / num_iterations;
 }
 
-
 class Conv3DKernels {
     //  N, N', D, D', K, sm, acc_dtype, dtype
     using kernel_hash_t = std::tuple<int, int, int, int, int, int, std::string, std::string>;
@@ -167,25 +140,21 @@ class Conv3DKernels {
     std::map<kernel_hash_t, std::vector<int>> kernel_indices;
     std::string metadata;
     int sm;
-public:
+
+   public:
     void load_kernel_map();
-    void load_kernel_map(std::string kernel_map_json);
+    void load_kernel_map(const std::string &kernel_map_json);
     void save_kernel_map(std::string kernel_map_file);
 
+    // this loads the kernels using the embedded metadata, through the cuda driver API
+    // however, it doesn't initialize a cuda context, as we want to use the cuda context from pytorch.
+    // therefore, it must be called after the pytorch context is initialized, which happens when you use the first CUDA
+    // function
     Conv3DKernels();
 
-    void run(
-        CUdeviceptr features, // [N, D]
-        CUdeviceptr indices, // [N', K**3]
-        CUdeviceptr weights, // [K**3, D, D']
-        CUdeviceptr output, // [N', D']
-        int N,
-        int NPrime,
-        int D,
-        int DPrime,
-        int K,
-        std::string acc_dtype,
-        std::string dtype,
-        CUstream stream
-    );
+    void run(CUdeviceptr features,  // [N, D]
+             CUdeviceptr indices,   // [N', K**3]
+             CUdeviceptr weights,   // [K**3, D, D']
+             CUdeviceptr output,    // [N', D']
+             int N, int NPrime, int D, int DPrime, int K, std::string acc_dtype, std::string dtype, CUstream stream);
 };

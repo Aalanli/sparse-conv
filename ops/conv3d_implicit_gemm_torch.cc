@@ -1,21 +1,21 @@
-#include <cstdint>
-#include "conv3d_implicit_gemm.h"
-
 #include <ATen/cuda/CUDAContext.h>
 #include <c10/cuda/CUDAException.h>
 #include <c10/cuda/CUDAGuard.h>
 #include <c10/cuda/CUDAStream.h>
-#include <memory>
 #include <torch/script.h>
+
+#include <cstdint>
+#include <memory>
 #include <tuple>
 #include <vector>
 
+#include "conv3d_implicit_gemm.h"
 
 thread_local std::unique_ptr<Conv3DKernels> kernels = nullptr;
 
 void setup_kernels() {
     if (kernels != nullptr) {
-        return; // Already set up
+        return;  // Already set up
     }
     kernels = std::make_unique<Conv3DKernels>();
 }
@@ -25,19 +25,27 @@ void save_kernel_map(std::string kernel_map_file) {
     kernels->save_kernel_map(kernel_map_file);
 }
 
-torch::Tensor conv3d_implicit_gemm_torch_forward(
-    torch::Tensor features, // [N, D]
-    torch::Tensor indices, // [N', K**3]
-    torch::Tensor weights, // [K**3, D, D']
-    int64_t K,
-    std::string acc_dtype
-) {
+torch::Tensor conv3d_implicit_gemm_torch_forward(torch::Tensor features,  // [N, D]
+                                                 torch::Tensor indices,   // [N', K**3]
+                                                 torch::Tensor weights,   // [K**3, D, D']
+                                                 int64_t K, std::string acc_dtype) {
     setup_kernels();
-    TORCH_CHECK(features.is_cuda(),  "features must be a CUDA tensor");
-    TORCH_CHECK(indices.is_cuda() , "indices must be a CUDA tensor");
-    TORCH_CHECK(weights.is_cuda() , "weights must be a CUDA tensor");
-    TORCH_CHECK(kernels != nullptr, "Kernels must be set up before calling conv3d_implicit_gemm_torch");
+    TORCH_CHECK(features.is_cuda(), "features must be a CUDA tensor");
+    TORCH_CHECK(indices.is_cuda(), "indices must be a CUDA tensor");
+    TORCH_CHECK(weights.is_cuda(), "weights must be a CUDA tensor");
+    TORCH_CHECK(features.dim() == 2, "features must be a 2D tensor");
+    TORCH_CHECK(indices.dim() == 2, "indices must be a 2D tensor");
+    TORCH_CHECK(weights.dim() == 3, "weights must be a 3D tensor");
 
+    if (!features.is_contiguous()) {
+        features = features.contiguous();
+    }
+    if (!indices.is_contiguous()) {
+        indices = indices.contiguous();
+    }
+    if (!weights.is_contiguous()) {
+        weights = weights.contiguous();
+    }
 
     int N = features.size(0);
     int D = features.size(1);
@@ -69,33 +77,24 @@ torch::Tensor conv3d_implicit_gemm_torch_forward(
         output_ptr = reinterpret_cast<CUdeviceptr>(output.data_ptr<float>());
         dtype = "fp32";
     } else {
-        throw std::runtime_error(std::string("Unsupported dtype: ") + std::string(features.dtype().TypeName<std::string>()));
+        throw std::runtime_error(std::string("Unsupported dtype: ") +
+                                 std::string(features.dtype().TypeName<std::string>()));
     }
 
     auto stream = at::cuda::getCurrentCUDAStream().stream();
-    kernels->run(
-        features_ptr, // [N, D]
-        indices_ptr, // [N', K**3]
-        weights_ptr, // [K**3, D, D']
-        output_ptr, // [N', D']
-        N,
-        NPrime,
-        D,
-        DPrime,
-        K,
-        acc_dtype,
-        dtype,
-        stream
-    );
+    kernels->run(features_ptr,  // [N, D]
+                 indices_ptr,   // [N', K**3]
+                 weights_ptr,   // [K**3, D, D']
+                 output_ptr,    // [N', D']
+                 N, NPrime, D, DPrime, K, acc_dtype, dtype, stream);
 
     return output;
 }
 
-std::tuple<torch::Tensor, torch::Tensor> conv3d_implicit_gemm_torch_backward(
-    torch::Tensor dout, // [N', D'] 
-    torch::Tensor feats, // [N, D]
-    torch::Tensor indices, // [N', K**3]
-    torch::Tensor weights // [K**3, D, D']
+std::tuple<torch::Tensor, torch::Tensor> conv3d_implicit_gemm_torch_backward(torch::Tensor dout,     // [N', D']
+                                                                             torch::Tensor feats,    // [N, D]
+                                                                             torch::Tensor indices,  // [N', K**3]
+                                                                             torch::Tensor weights   // [K**3, D, D']
 ) {
     TORCH_CHECK(dout.dim() == 2, "dout must be a 2D tensor");
     TORCH_CHECK(feats.dim() == 2, "feats must be a 2D tensor");
@@ -107,7 +106,7 @@ std::tuple<torch::Tensor, torch::Tensor> conv3d_implicit_gemm_torch_backward(
     int D = weights.size(1);
     int DPrime = weights.size(2);
 
-    auto feats_padded   = at::zeros({N + 1, D}, feats.options());
+    auto feats_padded = at::zeros({N + 1, D}, feats.options());
     feats_padded.narrow(/*dim=*/0, /*start=*/0, /*length=*/N).copy_(feats);
 
     auto indices_flat = indices.view({-1});
@@ -124,22 +123,18 @@ std::tuple<torch::Tensor, torch::Tensor> conv3d_implicit_gemm_torch_backward(
 }
 
 class Conv3dImplicitGemm : public torch::autograd::Function<Conv3dImplicitGemm> {
-public:
-    static torch::Tensor forward(
-        torch::autograd::AutogradContext *ctx,
-        torch::Tensor features, // [N, D]
-        torch::Tensor indices, // [N', K**3]
-        torch::Tensor weights, // [K**3, D, D']
-        int64_t K,
-        std::string acc_dtype
-    ) {
+   public:
+    static torch::Tensor forward(torch::autograd::AutogradContext *ctx,
+                                 torch::Tensor features,  // [N, D]
+                                 torch::Tensor indices,   // [N', K**3]
+                                 torch::Tensor weights,   // [K**3, D, D']
+                                 int64_t K, std::string acc_dtype) {
         ctx->save_for_backward({features, indices, weights});
         return conv3d_implicit_gemm_torch_forward(features, indices, weights, K, acc_dtype);
     }
 
-    static std::vector<torch::Tensor> backward(
-        torch::autograd::AutogradContext *ctx,
-        std::vector<torch::Tensor> dout // [N', D']
+    static std::vector<torch::Tensor> backward(torch::autograd::AutogradContext *ctx,
+                                               std::vector<torch::Tensor> dout  // [N', D']
     ) {
         auto saved = ctx->get_saved_variables();
         TORCH_CHECK(saved.size() == 3, "Expected 3 saved tensors, got ", saved.size());
@@ -149,35 +144,26 @@ public:
 
         auto dfeats_and_dweights = conv3d_implicit_gemm_torch_backward(dout[0], feats, indices, weights);
         return {
-            std::get<0>(dfeats_and_dweights), // dfeats
-            torch::Tensor(), // No gradient for indices
-            std::get<1>(dfeats_and_dweights), // dweights
-            torch::Tensor(), // No gradient for K
-            torch::Tensor() // No gradient for acc_dtype
+            std::get<0>(dfeats_and_dweights),  // dfeats
+            torch::Tensor(),                   // No gradient for indices
+            std::get<1>(dfeats_and_dweights),  // dweights
+            torch::Tensor(),                   // No gradient for K
+            torch::Tensor()                    // No gradient for acc_dtype
         };
     }
-    
 };
 
-torch::Tensor conv3d_implicit_gemm_torch(
-    torch::Tensor features, // [N, D]
-    torch::Tensor indices, // [N', K**3]
-    torch::Tensor weights, // [K**3, D, D']
-    int64_t K,
-    std::string acc_dtype
-) {
-    return Conv3dImplicitGemm::apply(
-        features, // [N, D]
-        indices, // [N', K**3]
-        weights, // [K**3, D, D']
-        K,
-        acc_dtype
-    );
+torch::Tensor conv3d_implicit_gemm_torch(torch::Tensor features,  // [N, D]
+                                         torch::Tensor indices,   // [N', K**3]
+                                         torch::Tensor weights,   // [K**3, D, D']
+                                         int64_t K, std::string acc_dtype) {
+    return Conv3dImplicitGemm::apply(features,  // [N, D]
+                                     indices,   // [N', K**3]
+                                     weights,   // [K**3, D, D']
+                                     K, acc_dtype);
 }
-
 
 TORCH_LIBRARY(conv3d_implicit_gemm, m) {
     m.def("save_kernel_map", &save_kernel_map);
     m.def("conv3d_implicit_gemm_torch", &conv3d_implicit_gemm_torch);
 }
-

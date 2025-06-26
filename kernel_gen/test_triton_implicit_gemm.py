@@ -7,9 +7,7 @@ import torch
 import ops.conv3d_implicit_gemm as aot_implicit_gemm
 import ops.conv3d_implicit_gemm
 import ops.idx_gen
-import triton.language as tl
-from triton_spconv import conv3d_implicit_gemm
-from implicit_gemm_kernel import implicit_conv3d_kernel
+from triton_implicit_gemm import conv3d_implicit_gemm
 from utils import get_voxel_coords
 
 
