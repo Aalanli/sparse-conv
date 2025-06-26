@@ -5,34 +5,32 @@ import triton.language as tl
 def or_combine(a, b):
     return a | b
 
-
-
 @triton.autotune(
     configs=[
         # good for float16
-        triton.Config({"BLOCK_N": 32, "BLOCK_K": 16, "BLOCK_Dp": 16 , 'PARALLEL_K': 1},  num_warps=2, num_stages=2),
-        triton.Config({"BLOCK_N": 16, "BLOCK_K": 16, "BLOCK_Dp": 16 , 'PARALLEL_K': 1},  num_warps=2, num_stages=2),
-        triton.Config({"BLOCK_N": 16, "BLOCK_K": 32, "BLOCK_Dp": 64 , 'PARALLEL_K': 1},  num_warps=2, num_stages=2),
-        triton.Config({"BLOCK_N": 16, "BLOCK_K": 32, "BLOCK_Dp": 64 , 'PARALLEL_K': 1},  num_warps=4, num_stages=2),
-        triton.Config({"BLOCK_N": 32, "BLOCK_K": 32, "BLOCK_Dp": 16 , 'PARALLEL_K': 1},  num_warps=2, num_stages=2),
-        triton.Config({"BLOCK_N": 16, "BLOCK_K": 32, "BLOCK_Dp": 128, 'PARALLEL_K': 1}, num_warps=4,  num_stages=2),
-        triton.Config({"BLOCK_N": 16, "BLOCK_K": 32, "BLOCK_Dp": 128, 'PARALLEL_K': 1}, num_warps=8,  num_stages=2),
-        triton.Config({"BLOCK_N": 128, "BLOCK_K": 32, "BLOCK_Dp": 32, 'PARALLEL_K': 1}, num_warps=4,  num_stages=2),
-        triton.Config({"BLOCK_N": 128, "BLOCK_K": 32, "BLOCK_Dp": 32, 'PARALLEL_K': 1}, num_warps=8,  num_stages=2),
-        triton.Config({"BLOCK_N": 16, "BLOCK_K": 64, "BLOCK_Dp": 64 , 'PARALLEL_K': 1},  num_warps=4, num_stages=2),
-        triton.Config({"BLOCK_N": 16, "BLOCK_K": 32, "BLOCK_Dp": 32 , 'PARALLEL_K': 1},  num_warps=2, num_stages=2),
-        triton.Config({"BLOCK_N": 32, "BLOCK_K": 16, "BLOCK_Dp": 32 , 'PARALLEL_K': 1},  num_warps=2, num_stages=2),
-        triton.Config({"BLOCK_N": 16, "BLOCK_K": 128, "BLOCK_Dp": 16 , 'PARALLEL_K': 1},  num_warps=2, num_stages=2),
-        triton.Config({"BLOCK_N": 16, "BLOCK_K": 128, "BLOCK_Dp": 16 , 'PARALLEL_K': 1},  num_warps=4, num_stages=2),
-        triton.Config({"BLOCK_N": 16, "BLOCK_K": 128, "BLOCK_Dp": 32 , 'PARALLEL_K': 1},  num_warps=4, num_stages=2),
-        triton.Config({"BLOCK_N": 16, "BLOCK_K": 128, "BLOCK_Dp": 32 , 'PARALLEL_K': 1},  num_warps=8, num_stages=2),
+        triton.Config({"BLOCK_N": 32, "BLOCK_K": 16, "BLOCK_Dp": 16, "PARALLEL_K": 1}, num_warps=2, num_stages=2),
+        triton.Config({"BLOCK_N": 16, "BLOCK_K": 16, "BLOCK_Dp": 16, "PARALLEL_K": 1}, num_warps=2, num_stages=2),
+        triton.Config({"BLOCK_N": 16, "BLOCK_K": 32, "BLOCK_Dp": 64, "PARALLEL_K": 1}, num_warps=2, num_stages=2),
+        triton.Config({"BLOCK_N": 16, "BLOCK_K": 32, "BLOCK_Dp": 64, "PARALLEL_K": 1}, num_warps=4, num_stages=2),
+        triton.Config({"BLOCK_N": 32, "BLOCK_K": 32, "BLOCK_Dp": 16, "PARALLEL_K": 1}, num_warps=2, num_stages=2),
+        triton.Config({"BLOCK_N": 16, "BLOCK_K": 32, "BLOCK_Dp": 128, "PARALLEL_K": 1}, num_warps=4, num_stages=2),
+        triton.Config({"BLOCK_N": 16, "BLOCK_K": 32, "BLOCK_Dp": 128, "PARALLEL_K": 1}, num_warps=8, num_stages=2),
+        triton.Config({"BLOCK_N": 128, "BLOCK_K": 32, "BLOCK_Dp": 32, "PARALLEL_K": 1}, num_warps=4, num_stages=2),
+        triton.Config({"BLOCK_N": 128, "BLOCK_K": 32, "BLOCK_Dp": 32, "PARALLEL_K": 1}, num_warps=8, num_stages=2),
+        triton.Config({"BLOCK_N": 16, "BLOCK_K": 64, "BLOCK_Dp": 64, "PARALLEL_K": 1}, num_warps=4, num_stages=2),
+        triton.Config({"BLOCK_N": 16, "BLOCK_K": 32, "BLOCK_Dp": 32, "PARALLEL_K": 1}, num_warps=2, num_stages=2),
+        triton.Config({"BLOCK_N": 32, "BLOCK_K": 16, "BLOCK_Dp": 32, "PARALLEL_K": 1}, num_warps=2, num_stages=2),
+        triton.Config({"BLOCK_N": 16, "BLOCK_K": 128, "BLOCK_Dp": 16, "PARALLEL_K": 1}, num_warps=2, num_stages=2),
+        triton.Config({"BLOCK_N": 16, "BLOCK_K": 128, "BLOCK_Dp": 16, "PARALLEL_K": 1}, num_warps=4, num_stages=2),
+        triton.Config({"BLOCK_N": 16, "BLOCK_K": 128, "BLOCK_Dp": 32, "PARALLEL_K": 1}, num_warps=4, num_stages=2),
+        triton.Config({"BLOCK_N": 16, "BLOCK_K": 128, "BLOCK_Dp": 32, "PARALLEL_K": 1}, num_warps=8, num_stages=2),
     ],
     key=["N", "N_prime", "K", "D", "D_prime", "acc_dtype"],
 )
 @triton.jit
 def implicit_conv3d_kernel(
     features,  # [N, D]
-    indices,  # [K**3, N']
+    indices,  # [N', K**3]
     weights,  # [K**3, D, D']
     output,  # [N', D']
     N,
@@ -43,7 +41,7 @@ def implicit_conv3d_kernel(
     BLOCK_N: tl.constexpr,  # tile size for N
     BLOCK_K: tl.constexpr,  # tile size for K
     BLOCK_Dp: tl.constexpr,  # tile size for D
-    PARALLEL_K: tl.constexpr, # whether to parallelize over K
+    PARALLEL_K: tl.constexpr,  # whether to parallelize over K
     acc_dtype: tl.constexpr,
 ):
     pid = tl.program_id(axis=0) // PARALLEL_K
@@ -55,12 +53,12 @@ def implicit_conv3d_kernel(
 
     stride_k = K * K * K
 
-    ind_ptr = indices + (tl.arange(0, BLOCK_N) + pid_n * BLOCK_N)
+    ind_ptr = indices + (tl.arange(0, BLOCK_N) + pid_n * BLOCK_N) * stride_k
     acc = tl.zeros((BLOCK_N, BLOCK_Dp), dtype=acc_dtype)
     for k_it in range(pid_k, stride_k, PARALLEL_K):
         k = k_it
         # [BLOCK_N]
-        inds = tl.load(ind_ptr + k * N_prime, mask=(tl.arange(0, BLOCK_N) + pid_n * BLOCK_N) < N_prime, other=-1)
+        inds = tl.load(ind_ptr + k, mask=(tl.arange(0, BLOCK_N) + pid_n * BLOCK_N) < N_prime, other=-1)
         # tl.device_print("inds", inds)
         if tl.reduce((0 <= inds) & (inds < N), 0, or_combine):
             for ki in range(tl.cdiv(D, BLOCK_K)):
@@ -98,6 +96,7 @@ def implicit_conv3d_kernel(
             acc.to(out_ptr.dtype.element_ty),
             out_mask,
         )
+
 
 @triton.autotune(
     configs=[
@@ -261,7 +260,7 @@ def implicit_conv3d_kernel_T(
         + tl.arange(0, BLOCK_Dp)[None, :]
         + pid_dp * BLOCK_Dp
     )
-    out_mask = (offsets_n[:, None] < N_prime) & (
+    out_mask = ((offsets_n[:, None] < N_prime) & (offsets_n[:, None] >= 0)) & (
         tl.arange(0, BLOCK_Dp)[None, :] + pid_dp * BLOCK_Dp < D_prime
     )
     if PARALLEL_K == 1:

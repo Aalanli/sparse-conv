@@ -140,12 +140,15 @@ def test_triton_jit_kernels_conv3d_subm(coords, dim_in, dim_out, kernel_size):
     weights = torch.randn(kernel_size ** 3, dim_in, dim_out, device="cuda", dtype=torch.float16) / dim_in**0.5
     indices = ops.idx_gen.gen_conv3d_subm_indices(coords, kernel_size)
     indices_T = ops.idx_gen.gen_conv3d_subm_indices_v2(coords, kernel_size)
-
     assert (indices == indices_T.T).all()
+    N = indices_T.shape[1]
+    indices_T_ = torch.empty([indices_T.shape[0], N + 1000], device=indices_T.device, dtype=indices_T.dtype)
+    indices_T_[:, :N] = indices.T
+    indices_T = indices_T_.narrow(1, 0, N)
 
+    out_ref = reference_conv3d_subm(feats, indices, weights, kernel_size)
     out_triton = conv3d_implicit_gemm(feats, indices, weights, kernel_size)
     out_triton_T = conv3d_implicit_gemm_T(feats, indices_T, weights, kernel_size)
-    out_ref = reference_conv3d_subm(feats, indices, weights, kernel_size)
 
     if not torch.allclose(out_triton, out_ref, atol=1e-1, rtol=1e-3):
         diffs = (out_triton - out_ref).abs()
@@ -153,6 +156,8 @@ def test_triton_jit_kernels_conv3d_subm(coords, dim_in, dim_out, kernel_size):
         print("Triton Jit. Outputs do not match!")
         print(out_triton)
         print(out_ref)
+        print(out_triton[-1])
+        print(indices[-1])
     
     if not torch.allclose(out_triton_T, out_ref, atol=1e-1, rtol=1e-3):
         diffs = (out_triton_T - out_ref).abs()
@@ -160,6 +165,8 @@ def test_triton_jit_kernels_conv3d_subm(coords, dim_in, dim_out, kernel_size):
         print("Triton Jit T. Outputs do not match!")
         print(out_triton_T)
         print(out_ref)
+        print(out_triton_T[-1])
+        print(indices_T[:, -1])
 
 def test():
     idx = get_voxel_coords(10000, device='cuda')
@@ -178,7 +185,7 @@ def test():
     # test_backwards(idx, 64, 64, 3)
 
     test_triton_jit_kernels_conv3d_subm(idx, 16, 16, 3)
-    # test_triton_jit_kernels_conv3d_subm(idx, 64, 64, 3)
+    test_triton_jit_kernels_conv3d_subm(idx, 64, 64, 3)
 
 test()
 

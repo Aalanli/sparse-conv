@@ -8,7 +8,7 @@ import triton.language as tl
 def conv3d_implicit_gemm(feats: torch.Tensor, indices: torch.Tensor, weights: torch.Tensor, kernel_size: int, acc_dtype=tl.float32):
     N, D = feats.shape
     N_prime, K3 = indices.shape
-    out = torch.empty((N_prime, weights.shape[2]), device=feats.device, dtype=feats.dtype)
+    out = torch.zeros((N_prime, weights.shape[2]), device=feats.device, dtype=feats.dtype)
     grid = lambda meta: (cdiv(N_prime, meta["BLOCK_N"]) * cdiv(meta["D_prime"], meta["BLOCK_Dp"]) * meta['PARALLEL_K'],)
     implicit_conv3d_kernel[grid](
         feats,  # [N, D]
@@ -70,6 +70,7 @@ def conv3d_implicit_gemm_T(
     else:
         inv = None
     N_prime_stride = indices.stride(0)
+    torch.cuda.synchronize()
     mask_i = torch.empty((NP, K3), device=feats.device, dtype=torch.bool)    
     implicit_gemm_mask_kernel[(NP,)](
         indices,  # [K**3, N']
@@ -80,6 +81,7 @@ def conv3d_implicit_gemm_T(
         BLOCK_N
     )
 
+    torch.cuda.synchronize()
 
     D_Prime = weights.shape[2]
     out = torch.empty((N_prime, D_Prime), device=feats.device, dtype=feats.dtype)
@@ -102,5 +104,6 @@ def conv3d_implicit_gemm_T(
         acc_dtype=acc_dtype,
         sorted=sort
     )
+    torch.cuda.synchronize()
     return out
 
