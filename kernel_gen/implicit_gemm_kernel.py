@@ -273,4 +273,125 @@ def implicit_conv3d_kernel_T(
         )
 
 
+# out = F' @ W = F[indices] @ W
+# out: [N', D']
+# features: [N, D]
+# indices: [K**3, N']
+# weights: [K**3, D, D']
+# 
+
+# weights' = weights (K**3 * D, D')
+# df = dout @ weights'^T
+def implicit_gemm_dF_kernel(
+    dout,     # [N', D']
+    weights,  # [K**3 * D, D']
+    indices,  # [K**3, N'] may be strided in N'
+    dfeatures,# [N, D]
+    N,        # number of features
+    N_prime,  # number of indices
+    N_prime_stride, 
+    D,        # feature dimension
+    D_prime,  # output dimension
+    K,        # kernel size
+    BLOCK_DPrime: tl.constexpr, # the "k" reduction dimension
+    BLOCK_NPrime: tl.constexpr,
+    BLOCK_D: tl.constexpr,
+    acc_dtype: tl.constexpr
+):
+    pid = tl.program_id(0)
+
+    grid_np = tl.cdiv(N_prime, BLOCK_NPrime)
+    pid_np = pid % grid_np
+    pid_d = pid // grid_np
+
+    blocks_per_d = tl.cdiv(D, BLOCK_D)
+
+    acc = tl.zeros((BLOCK_NPrime, BLOCK_D), dtype=acc_dtype)
+    offset_np = tl.arange(0, BLOCK_NPrime) + pid_np * BLOCK_NPrime
+    offset_dp = tl.arange(0, BLOCK_DPrime)
+    offset_d = tl.arange(0, BLOCK_D) + (pid_d % blocks_per_d) * BLOCK_D + (pid_d // blocks_per_d) * D
+    for k in range(0, tl.cdiv(D_prime, BLOCK_DPrime)):
+        ptr_dout = dout + (offset_np[:, None] * D_prime + offset_dp[None, :])
+        mask_dout = (offset_np[:, None] < N_prime) & (offset_dp[None, :] < D_prime)
+
+        ptr_weights = weights + (offset_dp[:, None] + offset_d[None, :] * D_prime)
+        mask_weights = (offset_dp[:, None] < D_prime) & \
+            ((tl.arange(0, BLOCK_D)[None, :] + (pid_d % blocks_per_d) * BLOCK_D) < D)
+        
+        dout_v = tl.load(ptr_dout, mask_dout, other=0.0)
+        W = tl.load(ptr_weights, mask_weights, other=0.0).to(dout_v.dtype)
+
+        acc += tl.dot(dout_v, W, out_dtype=acc_dtype).to(acc_dtype)
+        offset_dp += BLOCK_DPrime
+    
+    kprime = (pid_d // blocks_per_d)
+    inds_ptr = indices + offset_np + kprime * N_prime_stride
+    inds = tl.load(inds_ptr, mask=(offset_np < N_prime), other=-1)
+    inds_mask = (inds >= 0) & (inds < N)
+
+    offset_d_out = tl.load(0, BLOCK_D) + (pid_d % blocks_per_d) * BLOCK_D
+    df_ptr = dfeatures + (inds[:, None] * D + offset_d_out[None, :])
+    df_mask = inds_mask[:, None] & (offset_d_out[None, :] < D)
+
+    tl.atomic_add(df_ptr, acc.to(dfeatures.dtype.element_ty), df_mask)
+
+
+def implicit_gemm_dW_kernel(
+    dout,  # [N', D']
+    features, # [N, D]
+    indices, # [K**3, N'] may be strided in N'
+    dweight, # [K**3, D, D']
+    N, 
+    N_prime,
+    N_prime_stride,
+    D,
+    D_prime,
+    BLOCK_NPrime: tl.constexpr, # "k" reduction dimension
+    BLOCK_DPrime: tl.constexpr,
+    BLOCK_D: tl.constexpr,
+    PARALLEL_K: tl.constexpr,
+    acc_dtype: tl.constexpr
+):
+    grid_dp = tl.cdiv(D_prime, BLOCK_DPrime)
+    grid_d = tl.cdiv(D, BLOCK_D) * K * K * K
+    grid_size = grid_dp * grid_d
+    id = tl.program_id(0)
+    kid = id // grid_size
+    pid = id % grid_size
+    
+
+    pid_dp = pid % grid_dp
+    pid_d = pid // grid_dp
+
+    blocks_per_d = tl.cdiv(D, BLOCK_D)
+
+    acc = tl.zeros((BLOCK_DPrime, BLOCK_D), dtype=acc_dtype)
+    offset_dp = tl.arange(0, BLOCK_DPrime) + pid_dp * BLOCK_DPrime
+    offset_d = tl.arange(0, BLOCK_D) + (pid_d % blocks_per_d) * BLOCK_D
+    
+    for k in range(kid, tl.cdiv(N_prime, BLOCK_NPrime), PARALLEL_K):
+        offset_np_ind = tl.arange(0, BLOCK_NPrime) + k * BLOCK_NPrime
+        dout_ptr = dout + (offset_dp[:, None] + offset_np_ind[None, :] * D_prime)
+        dout_mask = (offset_dp[:, None] < D_prime) & (offset_np_ind[None, :] < N_prime)
+
+        inds_ptr = indices + (offset_np_ind + (pid_d // blocks_per_d) * N_prime_stride)
+        inds = tl.load(inds_ptr, offset_np_ind < N_prime, other=-1)
+        
+        f_ptr = features + (inds[:, None] * D + offset_d[None, :])
+        f_mask = ((inds >= 0) & (inds < N))[:, None] & (offset_d < D[None, :])
+        
+        dout_v = tl.load(dout_ptr, dout_mask, other=0.0)
+        f_v = tl.load(f_ptr, f_mask, other=0.0)
+
+        acc += tl.dot(dout_v, f_v, out_dtype=acc_dtype).to(acc_dtype)
+
+    acc_T = tl.trans(acc)
+    offset_dp = tl.arange(0, BLOCK_DPrime) + pid_dp * BLOCK_DPrime
+    offset_d = tl.arange(0, BLOCK_D) + (pid_d % blocks_per_d) * BLOCK_D + (pid_d // blocks_per_d) * D
+    dweight_ptr = dweight + (offset_d[:, None] * D_prime + offset_dp[None, :])
+    mask_dweight = (tl.arange(0, BLOCK_D) + (pid_d % blocks_per_d) * BLOCK_D < D)[:, None] &\
+        (offset_dp < D_prime)[None, :]
+    
+    tl.store(dweight_ptr, acc_T, mask_dweight)
+
 
