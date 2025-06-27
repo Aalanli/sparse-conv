@@ -1,6 +1,7 @@
 # %%
 import torch
 from kernel_gen.implicit_gemm_kernel import implicit_conv3d_kernel, implicit_conv3d_kernel_T, implicit_gemm_mask_kernel, implicit_gemm_idx_sort_kernel
+from kernel_gen.implicit_gemm_kernel import implicit_gemm_dF_kernel, implicit_gemm_dW_kernel
 from triton import cdiv
 import triton.language as tl
 
@@ -106,4 +107,29 @@ def conv3d_implicit_gemm_T(
     )
     torch.cuda.synchronize()
     return out
+
+
+def implicit_gemm_grad(dout: torch.Tensor, features: torch.Tensor, indices: torch.Tensor, weights: torch.Tensor, acc_dtype=tl.float32):
+    N_prime, D_prime = dout.shape
+    K3, D, _ = weights.shape
+    N, _ = features.shape
+    N_prime_stride = indices.stride(0)
+
+    dfeatures = torch.zeros_like(features)
+    grid = lambda meta: (cdiv(N_prime, meta['BLOCK_NPrime']) * cdiv(D, meta['BLOCK_D']) * K3,)
+    implicit_gemm_dF_kernel[grid](
+        dout, weights, indices, dfeatures, N, N_prime, N_prime_stride, 
+        D, D_prime, acc_dtype=acc_dtype
+    )
+
+    dweight = torch.empty_like(weights)
+    grid = lambda meta: (cdiv(D_prime, meta['BLOCK_DPrime']) * cdiv(D, meta['BLOCK_D']) * K3,)
+    implicit_gemm_dW_kernel[grid](
+        dout, features, indices, dweight,
+        N, N_prime, N_prime_stride,
+        D, D_prime, K3, acc_dtype=acc_dtype
+    )
+
+    return dfeatures, dweight
+
 

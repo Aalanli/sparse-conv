@@ -7,6 +7,7 @@ import torch
 import ops.conv3d_implicit_gemm as aot_implicit_gemm
 import ops.conv3d_implicit_gemm
 import ops.idx_gen
+import kernel_gen.triton_implicit_gemm as triton_kernels
 from kernel_gen.triton_implicit_gemm import conv3d_implicit_gemm
 from kernel_gen.utils import get_voxel_coords
 
@@ -99,6 +100,22 @@ def test_backwards(coords, D, DPrime, kernel_size):
         print("Reference:", dweights_ref)
         print("Computed:", dweights)
         print("Max diff:", (dweights - dweights_ref).abs().max())
+    
+    dfeat_triton, dweight_triton = triton_kernels.implicit_gemm_grad(dout, feats, indices.T.contiguous(), weights)
+    dfeat_triton, dweight_triton = triton_kernels.implicit_gemm_grad(dout, feats, indices.T.contiguous(), weights)
+    if not torch.allclose(dfeat_triton, dfeats_ref,  atol=1e-1, rtol=1e-3):
+        print("dfeats triton do not match!")
+        print("feats", feats.shape, "weights", weights.shape, "indices", indices.shape)
+        print("Reference:", dfeats_ref)
+        print("Computed:", dfeat_triton)
+        print("Max diff:", (dfeat_triton - dfeats_ref).abs().max())
+    
+    if not torch.allclose(dweight_triton, dweights_ref, atol=1e-1, rtol=1e-2):
+        print("dweights triton do not match!")
+        print("feats", feats.shape, "weights", weights.shape, "indices", indices.shape)
+        # print("Reference:", dweights_ref)
+        # print("Computed:", dweight_triton)
+        print("Max diff:", (dweight_triton - dweights_ref).abs().max())
 
 def compare_conv3d_subm(coords, dim_in, dim_out, kernel_size):
     n = coords.shape[0]
@@ -184,8 +201,18 @@ def test():
     # test_backwards(idx, 16, 32, 3)
     # test_backwards(idx, 64, 64, 3)
 
-    test_triton_jit_kernels_conv3d_subm(idx, 16, 16, 3)
-    test_triton_jit_kernels_conv3d_subm(idx, 64, 64, 3)
+    # test_triton_jit_kernels_conv3d_subm(idx, 16, 16, 3)
+    # test_triton_jit_kernels_conv3d_subm(idx, 64, 64, 3)
+
+    test_backwards(idx, 16, 16, 3)
+    test_backwards(idx, 16, 32, 3)
+    test_backwards(idx, 32, 32, 3)
+    test_backwards(idx, 64, 64, 3)
+
+    test_backwards(idx, 16, 16, 5)
+    test_backwards(idx, 16, 32, 5)
+    test_backwards(idx, 32, 32, 5)
+    test_backwards(idx, 64, 64, 5)
 
 test()
 

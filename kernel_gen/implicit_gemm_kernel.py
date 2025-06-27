@@ -282,6 +282,17 @@ def implicit_conv3d_kernel_T(
 
 # weights' = weights (K**3 * D, D')
 # df = dout @ weights'^T
+@triton.autotune(
+    configs=[
+        triton.Config({"BLOCK_DPrime": 16, "BLOCK_NPrime": 16, "BLOCK_D": 32}, num_warps=4, num_stages=3),
+        triton.Config({"BLOCK_DPrime": 64, "BLOCK_NPrime": 32, "BLOCK_D": 32}, num_warps=4, num_stages=3),
+        triton.Config({"BLOCK_DPrime": 64, "BLOCK_NPrime": 16, "BLOCK_D": 32}, num_warps=4, num_stages=3),
+        triton.Config({"BLOCK_DPrime": 16, "BLOCK_NPrime": 32, "BLOCK_D": 32}, num_warps=4, num_stages=3),
+        triton.Config({"BLOCK_DPrime": 16, "BLOCK_NPrime": 64, "BLOCK_D": 32}, num_warps=4, num_stages=3),
+    ],
+    key=["N", "N_prime", "D", "D_prime", "acc_dtype"]
+)
+@triton.jit
 def implicit_gemm_dF_kernel(
     dout,     # [N', D']
     weights,  # [K**3 * D, D']
@@ -292,7 +303,6 @@ def implicit_gemm_dF_kernel(
     N_prime_stride, 
     D,        # feature dimension
     D_prime,  # output dimension
-    K,        # kernel size
     BLOCK_DPrime: tl.constexpr, # the "k" reduction dimension
     BLOCK_NPrime: tl.constexpr,
     BLOCK_D: tl.constexpr,
@@ -310,7 +320,7 @@ def implicit_gemm_dF_kernel(
     offset_np = tl.arange(0, BLOCK_NPrime) + pid_np * BLOCK_NPrime
     offset_dp = tl.arange(0, BLOCK_DPrime)
     offset_d = tl.arange(0, BLOCK_D) + (pid_d % blocks_per_d) * BLOCK_D + (pid_d // blocks_per_d) * D
-    for k in range(0, tl.cdiv(D_prime, BLOCK_DPrime)):
+    for _ in range(0, tl.cdiv(D_prime, BLOCK_DPrime)):
         ptr_dout = dout + (offset_np[:, None] * D_prime + offset_dp[None, :])
         mask_dout = (offset_np[:, None] < N_prime) & (offset_dp[None, :] < D_prime)
 
@@ -329,13 +339,19 @@ def implicit_gemm_dF_kernel(
     inds = tl.load(inds_ptr, mask=(offset_np < N_prime), other=-1)
     inds_mask = (inds >= 0) & (inds < N)
 
-    offset_d_out = tl.load(0, BLOCK_D) + (pid_d % blocks_per_d) * BLOCK_D
+    offset_d_out = tl.arange(0, BLOCK_D) + (pid_d % blocks_per_d) * BLOCK_D
     df_ptr = dfeatures + (inds[:, None] * D + offset_d_out[None, :])
     df_mask = inds_mask[:, None] & (offset_d_out[None, :] < D)
 
     tl.atomic_add(df_ptr, acc.to(dfeatures.dtype.element_ty), df_mask)
 
-
+@triton.autotune(
+    configs=[
+        triton.Config({"BLOCK_DPrime": 16, "BLOCK_NPrime": 16, "BLOCK_D": 32, "PARALLEL_K": 1}, num_warps=4, num_stages=3),
+    ],
+    key=["N", "N_prime", "D", "D_prime", "acc_dtype"]
+)
+@triton.jit
 def implicit_gemm_dW_kernel(
     dout,  # [N', D']
     features, # [N, D]
@@ -346,6 +362,7 @@ def implicit_gemm_dW_kernel(
     N_prime_stride,
     D,
     D_prime,
+    K3,
     BLOCK_NPrime: tl.constexpr, # "k" reduction dimension
     BLOCK_DPrime: tl.constexpr,
     BLOCK_D: tl.constexpr,
@@ -353,7 +370,7 @@ def implicit_gemm_dW_kernel(
     acc_dtype: tl.constexpr
 ):
     grid_dp = tl.cdiv(D_prime, BLOCK_DPrime)
-    grid_d = tl.cdiv(D, BLOCK_D) * K * K * K
+    grid_d = tl.cdiv(D, BLOCK_D) * K3
     grid_size = grid_dp * grid_d
     id = tl.program_id(0)
     kid = id // grid_size
