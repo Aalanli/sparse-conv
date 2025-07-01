@@ -182,8 +182,8 @@ def test_triton_jit_kernels_conv3d_subm(coords, dim_in, dim_out, kernel_size):
         print("Triton Jit T. Outputs do not match!")
         print(out_triton_T)
         print(out_ref)
-        print(out_triton_T[-1])
-        print(indices_T[:, -1])
+        print(out_triton_T[0])
+        print(indices_T[:, 0])
 
 def test():
     idx = get_voxel_coords(10000, device='cuda')
@@ -201,8 +201,8 @@ def test():
     # test_backwards(idx, 16, 32, 3)
     # test_backwards(idx, 64, 64, 3)
 
-    # test_triton_jit_kernels_conv3d_subm(idx, 16, 16, 3)
-    # test_triton_jit_kernels_conv3d_subm(idx, 64, 64, 3)
+    test_triton_jit_kernels_conv3d_subm(idx, 16, 16, 3)
+    test_triton_jit_kernels_conv3d_subm(idx, 64, 64, 3)
 
     test_backwards(idx, 16, 16, 3)
     test_backwards(idx, 16, 32, 3)

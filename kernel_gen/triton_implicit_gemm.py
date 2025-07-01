@@ -47,7 +47,6 @@ def sort_indices(indices: torch.Tensor):
         N_stride,
         K3,
         BLOCK_K,
-        mask_dtype=sort_dtype,
     )
     sort_idx = torch.argsort(sort_inds)
     indices = indices[:, sort_idx]
@@ -69,7 +68,7 @@ def conv3d_implicit_gemm_T(
     if sort:
         indices, inv = sort_indices(indices)
     else:
-        inv = None
+        inv = torch.tensor(0, dtype=torch.int32 if K3 < 32 else torch.int64, device=indices.device)
     N_prime_stride = indices.stride(0)
     torch.cuda.synchronize()
     mask_i = torch.empty((NP, K3), device=feats.device, dtype=torch.bool)    
@@ -78,7 +77,7 @@ def conv3d_implicit_gemm_T(
         mask_i,  # [NP, K**3]
         N_prime,
         N_prime_stride,
-        kernel_size,
+        K3,
         BLOCK_N
     )
 
@@ -101,9 +100,9 @@ def conv3d_implicit_gemm_T(
         D,
         D_Prime,
         kernel_size,
+        sort,
         BLOCK_N,
         acc_dtype=acc_dtype,
-        sorted=sort
     )
     torch.cuda.synchronize()
     return out
