@@ -103,7 +103,7 @@ def extract_full_configs(key_vals: list):
     ]
     kernel_sizes = [3]
     params = list(itertools.product(Ns, dtypes, BLOCK_Ns, dims, kernel_sizes))
-    for N, (out_dtype, weight_dtype, acc_dtype), BLOCK_N, (dim_in, dim_out), K in tqdm(params, desc="Extracting configs"):
+    for N, (out_dtype, acc_dtype, weight_dtype), BLOCK_N, (dim_in, dim_out), K in tqdm(params, desc="Extracting configs"):
         key_vals.append(print_cache(N, dim_in, dim_out, K, out_dtype, weight_dtype, acc_dtype, BLOCK_N))
 
 def extract_test_configs(key_vals: list):
@@ -122,7 +122,8 @@ if __name__ == "__main__":
     sm = get_sm()
     key_vals = []
 
-    extract_test_configs(key_vals)
+    # extract_test_configs(key_vals)
+    extract_full_configs(key_vals)
 
     parser = argparse.ArgumentParser(description="Dump extracted configs to a file.")
     parser.add_argument("--out", type=str, required=True, help="Output JSON file name")
