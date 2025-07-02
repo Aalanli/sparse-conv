@@ -23,6 +23,8 @@ extern const unsigned char _binary_kernel_map_json_end[];
 static thread_local std::unique_ptr<TritonAotKernels<ImplicitGemmConv3dKernelT>> implicit_gemm_kernels = nullptr;
 static thread_local std::unique_ptr<TritonAotKernels<ImplicitGemmSortKernel>> implicit_sort_kernels = nullptr;
 static thread_local std::unique_ptr<TritonAotKernels<ImplicitGemmMaskKernel>> implicit_gemm_mask_kernels = nullptr;
+static thread_local std::unique_ptr<TritonAotKernels<ImplicitGemmConv3dDFKernel>> implicit_gemm_df_kernels = nullptr;
+static thread_local std::unique_ptr<TritonAotKernels<ImplicitGemmConv3dDWKernel>> implicit_gemm_dw_kernels = nullptr;
 
 void setup_kernels() {
     if (implicit_gemm_kernels) {
@@ -35,6 +37,8 @@ void setup_kernels() {
     implicit_gemm_kernels = std::make_unique<TritonAotKernels<ImplicitGemmConv3dKernelT>>(meta["implicit_conv3d_kernel_T"]);
     implicit_sort_kernels = std::make_unique<TritonAotKernels<ImplicitGemmSortKernel>>(meta["implicit_gemm_idx_sort_kernel"]);
     implicit_gemm_mask_kernels = std::make_unique<TritonAotKernels<ImplicitGemmMaskKernel>>(meta["implicit_gemm_mask_kernel"]);
+    implicit_gemm_df_kernels = std::make_unique<TritonAotKernels<ImplicitGemmConv3dDFKernel>>(meta["implicit_gemm_dF_kernel"]);
+    implicit_gemm_dw_kernels = std::make_unique<TritonAotKernels<ImplicitGemmConv3dDWKernel>>(meta["implicit_gemm_dW_kernel"]);
 }
 
 TritonAotKernels<ImplicitGemmConv3dKernelT>* get_implicit_gemm_kernels() {
@@ -50,6 +54,16 @@ TritonAotKernels<ImplicitGemmSortKernel>* get_implicit_sort_kernels() {
 TritonAotKernels<ImplicitGemmMaskKernel>* get_implicit_gemm_mask_kernels() {
     setup_kernels();
     return implicit_gemm_mask_kernels.get();
+}
+
+TritonAotKernels<ImplicitGemmConv3dDFKernel>* get_implicit_gemm_df_kernels() {
+    setup_kernels();
+    return implicit_gemm_df_kernels.get();
+}
+
+TritonAotKernels<ImplicitGemmConv3dDWKernel>* get_implicit_gemm_dw_kernels() {
+    setup_kernels();
+    return implicit_gemm_dw_kernels.get();
 }
 
 void save_kernel_map(std::string kernel_map_file) {

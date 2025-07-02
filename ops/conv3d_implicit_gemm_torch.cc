@@ -11,6 +11,7 @@
 
 #include "c10/core/ScalarType.h"
 #include "conv3d_implicit_gemm_T.h"
+#include "torch/csrc/autograd/generated/variable_factories.h"
 
 Dtype get_dtype(const torch::Tensor &tensor) {
     if (tensor.dtype() == torch::kFloat32) {
@@ -119,8 +120,9 @@ torch::Tensor conv3d_implicit_gemm_torch_forward(torch::Tensor features,  // [N,
 
 std::tuple<torch::Tensor, torch::Tensor> conv3d_implicit_gemm_torch_backward(torch::Tensor dout,     // [N', D']
                                                                              torch::Tensor feats,    // [N, D]
-                                                                             torch::Tensor indices,  // [N', K**3]
-                                                                             torch::Tensor weights   // [K**3, D, D']
+                                                                             torch::Tensor indices,  // [K**3, N']
+                                                                             torch::Tensor weights,   // [K**3, D, D']
+                                                                             std::string acc_dtype
 ) {
     TORCH_CHECK(dout.dim() == 2, "dout must be a 2D tensor");
     TORCH_CHECK(feats.dim() == 2, "feats must be a 2D tensor");
@@ -128,24 +130,55 @@ std::tuple<torch::Tensor, torch::Tensor> conv3d_implicit_gemm_torch_backward(tor
     TORCH_CHECK(weights.dim() == 3, "weights must be a 3D tensor");
 
     int N = feats.size(0);
+    int N_prime = indices.size(1);
+    int N_prime_stride = indices.stride(0);
     int K3 = weights.size(0);
     int D = weights.size(1);
     int DPrime = weights.size(2);
+    
+    auto dfeatures = torch::empty_like(feats);
+    auto dweights = torch::empty_like(weights);
 
-    auto feats_padded = at::zeros({N + 1, D}, feats.options());
-    feats_padded.narrow(/*dim=*/0, /*start=*/0, /*length=*/N).copy_(feats);
+    auto stream = at::cuda::getCurrentCUDAStream().stream();
 
-    auto indices_flat = indices.view({-1});
-    auto indices_ = at::where(indices_flat < 0, N, indices_flat);
-    auto weights_view = weights.view({-1, DPrime});
 
-    auto feats_gathered = feats_padded.index_select(0, indices_).view({-1, K3 * D});
-    auto dfeats_gathered = dout.mm(weights_view.t());
-    auto dweights = feats_gathered.t().mm(dout).view({K3, D, DPrime});
-    auto dfeats = at::zeros_like(feats_padded);
-    dfeats.index_add_(0, indices_, dfeats_gathered.view({-1, D}));
-    dfeats = dfeats.narrow(/*dim=*/0, /*start=*/0, /*length=*/N);
-    return std::make_tuple(dfeats, dweights);
+    get_implicit_gemm_df_kernels()->run({
+        dout.data_ptr(),
+        feats.data_ptr(),
+        weights.data_ptr(),
+        indices.data_ptr(),
+        dfeatures.data_ptr(),
+        dweights.data_ptr(),
+        N,
+        N_prime,
+        N_prime_stride,
+        D,
+        DPrime,
+        K3,
+        get_dtype(feats),
+        get_dtype(weights),
+        Dtype::from_string(acc_dtype)
+    }, stream);
+
+    get_implicit_gemm_dw_kernels()->run({
+        dout.data_ptr(),
+        feats.data_ptr(),
+        weights.data_ptr(),
+        indices.data_ptr(),
+        dfeatures.data_ptr(),
+        dweights.data_ptr(),
+        N,
+        N_prime,
+        N_prime_stride,
+        D,
+        DPrime,
+        K3,
+        get_dtype(feats),
+        get_dtype(weights),
+        Dtype::from_string(acc_dtype)
+    }, stream);
+
+    return {dfeatures, dweights};
 }
 
 class Conv3dImplicitGemm : public torch::autograd::Function<Conv3dImplicitGemm> {
@@ -156,6 +189,7 @@ class Conv3dImplicitGemm : public torch::autograd::Function<Conv3dImplicitGemm> 
                                  torch::Tensor weights,   // [K**3, D, D']
                                  int64_t K, std::string acc_dtype, int64_t BLOCK_N, bool sorted) {
         ctx->save_for_backward({features, indices, weights});
+        ctx->saved_data["acc_dtype"] = acc_dtype;
         return conv3d_implicit_gemm_torch_forward(features, indices, weights, K, acc_dtype, BLOCK_N, sorted);
     }
 
@@ -167,8 +201,9 @@ class Conv3dImplicitGemm : public torch::autograd::Function<Conv3dImplicitGemm> 
         auto feats = saved[0];
         auto indices = saved[1];
         auto weights = saved[2];
+        std::string acc_dtype = ctx->saved_data["acc_dtype"].toStringRef();
 
-        auto dfeats_and_dweights = conv3d_implicit_gemm_torch_backward(dout[0], feats, indices, weights);
+        auto dfeats_and_dweights = conv3d_implicit_gemm_torch_backward(dout[0], feats, indices, weights, acc_dtype);
         return {
             std::get<0>(dfeats_and_dweights),  // dfeats
             torch::Tensor(),                   // No gradient for indices

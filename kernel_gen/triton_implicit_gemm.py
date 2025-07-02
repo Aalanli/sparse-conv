@@ -121,8 +121,8 @@ def implicit_gemm_grad(dout: torch.Tensor, features: torch.Tensor, indices: torc
         D, D_prime, acc_dtype=acc_dtype
     )
 
-    dweight = torch.empty_like(weights)
-    grid = lambda meta: (cdiv(D_prime, meta['BLOCK_DPrime']) * cdiv(D, meta['BLOCK_D']) * K3,)
+    dweight = torch.zeros_like(weights)
+    grid = lambda meta: (cdiv(D_prime, meta['BLOCK_DPrime']) * cdiv(D, meta['BLOCK_D']) * K3 * meta['PARALLEL_K'],)
     implicit_gemm_dW_kernel[grid](
         dout, features, indices, dweight,
         N, N_prime, N_prime_stride,

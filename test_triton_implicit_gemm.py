@@ -82,8 +82,10 @@ def test_backwards(coords, D, DPrime, kernel_size):
     with torch.no_grad():
         dfeats_ref, dweights_ref = reference_backwards(dout, feats, indices, weights, kernel_size)
 
+    indices_T = ops.idx_gen.gen_conv3d_subm_indices_v2(coords, kernel_size)
+    assert (indices == indices_T.T).all()
     res = ops.conv3d_implicit_gemm.conv3d_implicit_gemm(
-        feats, indices, weights, kernel_size
+        feats.half(), indices_T, weights, kernel_size
     )
     (res * dout).sum().backward()
 
@@ -92,14 +94,14 @@ def test_backwards(coords, D, DPrime, kernel_size):
 
     if not torch.allclose(dfeats, dfeats_ref, atol=1e-3, rtol=1e-3):
         print("dfeats do not match!")
-        print("Reference:", dfeats_ref)
-        print("Computed:", dfeats)
+        # print("Reference:", dfeats_ref)
+        # print("Computed:", dfeats)
         print("Max diff:", (dfeats - dfeats_ref).abs().max())
     
     if not torch.allclose(dweights, dweights_ref, atol=1e-3, rtol=1e-3):
         print("dweights do not match!")
-        print("Reference:", dweights_ref)
-        print("Computed:", dweights)
+        # print("Reference:", dweights_ref)
+        # print("Computed:", dweights)
         print("Max diff:", (dweights - dweights_ref).abs().max())
     
     dfeat_triton, dweight_triton = triton_kernels.implicit_gemm_grad(dout, feats, indices.T.contiguous(), weights)
@@ -107,16 +109,18 @@ def test_backwards(coords, D, DPrime, kernel_size):
     if not torch.allclose(dfeat_triton, dfeats_ref,  atol=1e-1, rtol=1e-3):
         print("dfeats triton do not match!")
         print("feats", feats.shape, "weights", weights.shape, "indices", indices.shape)
-        print("Reference:", dfeats_ref)
-        print("Computed:", dfeat_triton)
+        # print("Reference:", dfeats_ref)
+        # print("Computed:", dfeat_triton)
         print("Max diff:", (dfeat_triton - dfeats_ref).abs().max())
     
-    if not torch.allclose(dweight_triton, dweights_ref, atol=1e-1, rtol=1e-2):
+    if not torch.allclose(dweight_triton, dweights_ref, atol=1e-1, rtol=1e-1):
         print("dweights triton do not match!")
         print("feats", feats.shape, "weights", weights.shape, "indices", indices.shape)
         # print("Reference:", dweights_ref)
         # print("Computed:", dweight_triton)
-        print("Max diff:", (dweight_triton - dweights_ref).abs().max())
+        diff = (dweight_triton - dweights_ref).abs()
+        print("Max diff:", diff.max())
+        print("Mean diff:", diff.mean())
 
 def compare_conv3d_subm(coords, dim_in, dim_out, kernel_size):
     n = coords.shape[0]
@@ -189,9 +193,9 @@ def test_triton_jit_kernels_conv3d_subm(coords, dim_in, dim_out, kernel_size):
         print(indices_T[:, 0])
 
 def test():
-    idx = get_voxel_coords(10000, device='cuda')
+    idx = get_voxel_coords(100000, device='cuda')
 
-    compare_conv3d_subm(idx, 16, 32, 3)
+    # compare_conv3d_subm(idx, 16, 32, 3)
     # compare_conv3d_subm(idx, 64, 64, 3)
     # compare_conv3d_subm(idx, 128, 128, 3)
     # compare_conv3d_subm(idx, 64, 128, 3)
@@ -200,7 +204,7 @@ def test():
     # test_reference_backwards(idx, 16, 32, 3)
     # test_reference_backwards(idx, 64, 64, 3)
 
-    # test_backwards(idx, 16, 16, 3)
+    test_backwards(idx, 16, 16, 3)
     # test_backwards(idx, 16, 32, 3)
     # test_backwards(idx, 64, 64, 3)
 

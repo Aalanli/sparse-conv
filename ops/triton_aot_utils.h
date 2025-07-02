@@ -245,7 +245,7 @@ public:
 
 
     ~TritonKernel() {
-        CHECK_CU_CALL(cuModuleUnload(mod));
+        cuModuleUnload(mod);
     }
 
     void run(KernelArgs kargs, CUstream stream) {

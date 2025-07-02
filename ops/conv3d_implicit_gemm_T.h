@@ -240,8 +240,164 @@ public:
     }
 };
 
+struct ImplicitGemmConv3dGradKernelArgs {
+    void* dout;
+    void* features;
+    void* weights;
+    void* indices;
+    void* dfeatures;
+    void* dweights;
+    int N;
+    int N_prime;
+    int N_prime_stride;
+    int D;
+    int DPrime;
+    int K3;
+    Dtype feat_dtype;
+    Dtype weight_dtype;
+    Dtype acc_dtype;
+    using KHash_t = std::tuple<Dtype, Dtype, Dtype, int, int, int, int, int>;
+
+    static json serialize(const KHash_t& args) {
+        json res;
+        res["feat_dtype"] = std::get<0>(args).to_string();
+        res["weight_dtype"] = std::get<1>(args).to_string();
+        res["acc_dtype"] = std::get<2>(args).to_string();
+        res["N"] = std::get<3>(args);
+        res["NPrime"] = std::get<4>(args);
+        res["D"] = std::get<5>(args);
+        res["DPrime"] = std::get<6>(args);
+        res["K3"] = std::get<7>(args);
+        return res;
+    }
+    static KHash_t deserialize(const json &j) {
+        return std::make_tuple(
+            Dtype::from_string(j["feat_dtype"].get<std::string>()),
+            Dtype::from_string(j["weight_dtype"].get<std::string>()),
+            Dtype::from_string(j["acc_dtype"].get<std::string>()),
+            j["N"].get<int>(),
+            j["NPrime"].get<int>(),
+            j["D"].get<int>(),
+            j["DPrime"].get<int>(),
+            j["K3"].get<int>()
+        );
+    }
+
+    KHash_t khash() const {
+        return std::make_tuple(
+            feat_dtype, weight_dtype, acc_dtype,
+            quant_N(N), quant_N(N_prime), D, DPrime, K3
+        );
+    }
+};
+
+struct ImplicitGemmConv3dDFKernelArgs : ImplicitGemmConv3dGradKernelArgs {
+    KArg_t get_args() const {
+        return {
+            {Dtype(feat_dtype.type, true), dout},
+            {Dtype(weight_dtype.type, true), weights},
+            {Dtype(Dtype::INT32, true), indices},
+            {Dtype(feat_dtype.type, true), dfeatures},
+            {Dtype(Dtype::INT32), (void*) &N},
+            {Dtype(Dtype::INT32), (void*) &N_prime},
+            {Dtype(Dtype::INT32), (void*) &N_prime_stride},
+            {Dtype(Dtype::INT32), (void*) &D},
+            {Dtype(Dtype::INT32), (void*) &DPrime}
+        };
+    }
+};
+
+struct ImplicitGemmConv3dDWKernelArgs : ImplicitGemmConv3dGradKernelArgs {
+    KArg_t get_args() const {
+        return {
+            {Dtype(feat_dtype.type, true), dout},
+            {Dtype(feat_dtype.type, true), features},
+            {Dtype(Dtype::INT32, true), indices},
+            {Dtype(weight_dtype.type, true), dweights},
+            {Dtype(Dtype::INT32), (void*) &N},
+            {Dtype(Dtype::INT32), (void*) &N_prime},
+            {Dtype(Dtype::INT32), (void*) &N_prime_stride},
+            {Dtype(Dtype::INT32), (void*) &D},
+            {Dtype(Dtype::INT32), (void*) &DPrime},
+            {Dtype(Dtype::INT32), (void*) &K3}
+        };
+    }
+};
+
+class ImplicitGemmConv3dDFKernel : public TritonKernel<ImplicitGemmConv3dDFKernelArgs> {
+    Dtype acc_dtype;
+    int BLOCK_DPrime;
+    int BLOCK_NPrime;
+    int BLOCK_D;
+public:
+    ImplicitGemmConv3dDFKernel(const json &config) : 
+        TritonKernel<ImplicitGemmConv3dDFKernelArgs>(config),
+        acc_dtype(Dtype::from_string(config["acc_dtype"].get<std::string>())),
+        BLOCK_DPrime(config["BLOCK_DPrime"]),
+        BLOCK_NPrime(config["BLOCK_NPrime"]),
+        BLOCK_D(config["BLOCK_D"]) {}
+    
+    std::tuple<int, int, int> blocks(const ImplicitGemmConv3dDFKernelArgs &args) const override {
+        return {
+            cdiv(args.N_prime, BLOCK_NPrime) * cdiv(args.D, BLOCK_D) * args.K3,
+            1, 1
+        };
+    }
+
+    void run(KernelArgs kargs, CUstream stream) {
+        if (kargs.feat_dtype.type == Dtype::FP16) {
+            cuMemsetD16((CUdeviceptr) kargs.dfeatures, 0, kargs.N * kargs.D);
+        } else if (kargs.feat_dtype.type == Dtype::FP32) {
+            cuMemsetD32((CUdeviceptr) kargs.dfeatures, 0, kargs.N * kargs.D);
+        } else {
+            throw std::runtime_error("Unsupported feature dtype for implicit gemm conv3d DF: " + kargs.feat_dtype.to_string());
+        }
+        super_t::run(kargs, stream);
+    }
+};
+
+class ImplicitGemmConv3dDWKernel : public TritonKernel<ImplicitGemmConv3dDWKernelArgs> {
+    Dtype acc_dtype;
+    int BLOCK_DPrime;
+    int BLOCK_NPrime;
+    int BLOCK_D;
+    int PARALLEL_K;
+public:
+    ImplicitGemmConv3dDWKernel(const json &config) :
+        TritonKernel<ImplicitGemmConv3dDWKernelArgs>(config),
+        acc_dtype(Dtype::from_string(config["acc_dtype"].get<std::string>())),
+        BLOCK_DPrime(config["BLOCK_DPrime"]),
+        BLOCK_NPrime(config["BLOCK_NPrime"]),
+        BLOCK_D(config["BLOCK_D"]),
+        PARALLEL_K(config["PARALLEL_K"])    
+    {}
+    
+    std::tuple<int, int, int> blocks(const ImplicitGemmConv3dDWKernelArgs &args) const override {
+        return {
+            cdiv(args.DPrime, BLOCK_DPrime) * cdiv(args.D, BLOCK_D) * args.K3 * PARALLEL_K,
+            1, 1
+        };
+    }
+
+    void run(KernelArgs kargs, CUstream stream) {
+        if (PARALLEL_K > 1) {
+            if (kargs.weight_dtype.type == Dtype::FP16) {
+                cuMemsetD16((CUdeviceptr) kargs.dweights, 0, kargs.K3 * kargs.D * kargs.DPrime);
+            } else if (kargs.weight_dtype.type == Dtype::FP32) {
+                cuMemsetD32((CUdeviceptr) kargs.dweights, 0, kargs.K3 * kargs.D * kargs.DPrime);
+            } else {
+                throw std::runtime_error("Unsupported feature dtype for implicit gemm conv3d DW: " + kargs.feat_dtype.to_string());
+            }
+        }
+        super_t::run(kargs, stream);
+    }
+};
+
 void save_kernel_map(std::string kernel_map_file);
 
 TritonAotKernels<ImplicitGemmConv3dKernelT>* get_implicit_gemm_kernels();
 TritonAotKernels<ImplicitGemmSortKernel>* get_implicit_sort_kernels();
 TritonAotKernels<ImplicitGemmMaskKernel>* get_implicit_gemm_mask_kernels();
+TritonAotKernels<ImplicitGemmConv3dDFKernel>* get_implicit_gemm_df_kernels();
+TritonAotKernels<ImplicitGemmConv3dDWKernel>* get_implicit_gemm_dw_kernels();
+
