@@ -30,7 +30,7 @@ struct IdxSortKernelArgs {
     KArg_t get_args() const {
         return {
             {Dtype(Dtype::INT32, true), indices},
-            {mask_dtype, line_mask},
+            {Dtype(mask_dtype.type, true), line_mask},
             {Dtype(Dtype::INT32), (void*) &N},
             {Dtype(Dtype::INT32), (void*) &N_stride},
             {Dtype(Dtype::INT32), (void*) &K3}
@@ -55,15 +55,15 @@ public:
         };
     }
 
-    bool can_run(const IdxSortKernelArgs &args) const {
-        return args.K3 <= BLOCK_K && self_t::can_run(args);
+    bool can_run(IdxSortKernelArgs &args) const {
+        return args.K3 <= BLOCK_K && super_t::can_run(args);
     }
 };
 
 struct GemmMaskKernelArgs {
     using KHash_t = std::tuple<int, int, int>;
-    void *indices; // [K3, N]
-    void *mask; // [N', K3]
+    void* indices; // [K3, N]
+    void* mask; // [N', K3]
     int N;
     int N_stride;
     int K3;
@@ -85,10 +85,10 @@ struct GemmMaskKernelArgs {
         return std::make_tuple(quant_N(N), K3, BLOCK_N);
     }
 
-    KArg_t get_args() const {
+    KArg_t get_args() {
         return {
-            {Dtype(Dtype::INT32, true), indices},
-            {Dtype(Dtype::INT32, true), mask},
+            {Dtype(Dtype::INT32, true),indices},
+            {Dtype(Dtype::BOOL, true), mask},
             {Dtype(Dtype::INT32), (void*) &N},
             {Dtype(Dtype::INT32), (void*) &N_stride},
             {Dtype(Dtype::INT32), (void*) &K3}
@@ -113,8 +113,8 @@ public:
         };
     }
 
-    bool can_run(const GemmMaskKernelArgs &args) const {
-        return args.BLOCK_N == BLOCK_N && self_t::can_run(args);
+    bool can_run(GemmMaskKernelArgs &args) const {
+        return args.BLOCK_N == BLOCK_N && super_t::can_run(args);
     }
 };
 
@@ -179,18 +179,19 @@ struct ImplicitGemmConv3dKernelTArgs {
 
     KArg_t get_args() const {
         return {
-            {feat_dtype, features},
+            {Dtype(feat_dtype.type, true), features},
             {Dtype(Dtype::INT32, true), indices},
-            {Dtype(Dtype::INT32, true), mask_ind},
-            {weight_dtype, weights},
+            {Dtype(Dtype::BOOL, true), mask_ind},
+            {Dtype(weight_dtype.type, true), weights},
             {Dtype(Dtype::INT32, true), out_perm},
-            {feat_dtype, out},
+            {Dtype(feat_dtype.type, true), out},
             {Dtype(Dtype::INT32), (void*) &N},
             {Dtype(Dtype::INT32), (void*) &NPrime},
             {Dtype(Dtype::INT32), (void*) &N_prime_stride},
             {Dtype(Dtype::INT32), (void*) &D},
             {Dtype(Dtype::INT32), (void*) &DPrime},
             {Dtype(Dtype::INT32), (void*) &K},
+            {Dtype(Dtype::BOOL), (void*) &sorted},
         };
     }
 
@@ -203,7 +204,6 @@ class ImplicitGemmConv3dKernelT : public TritonKernel<ImplicitGemmConv3dKernelTA
     int BLOCK_Dp;
     int PARALLEL_K;
     Dtype acc_dtype;
-    bool sorted;
 public:
     
     ImplicitGemmConv3dKernelT(const json &config) : 
@@ -212,8 +212,7 @@ public:
         BLOCK_K(config["BLOCK_K"]),
         BLOCK_Dp(config["BLOCK_Dp"]),
         PARALLEL_K(config["PARALLEL_K"]),
-        acc_dtype(Dtype::from_string(config["acc_dtype"].get<std::string>())),
-        sorted(config["sorted"].get<bool>()) {}
+        acc_dtype(Dtype::from_string(config["acc_dtype"].get<std::string>())) {}
     
     std::tuple<int, int, int> blocks(const ImplicitGemmConv3dKernelTArgs &args) const override {
         return {
@@ -222,10 +221,9 @@ public:
         };
     }
 
-    bool can_run(const ImplicitGemmConv3dKernelTArgs &args) const {
+    bool can_run(ImplicitGemmConv3dKernelTArgs &args) const {
         return args.BLOCK_N == BLOCK_N &&
-            args.sorted == sorted &&
-            args.acc_dtype == acc_dtype && self_t::can_run(args);
+            args.acc_dtype == acc_dtype && super_t::can_run(args);
     }
 
     void run(KernelArgs kargs, CUstream stream) {
@@ -238,7 +236,7 @@ public:
                 throw std::runtime_error("Unsupported feature dtype for implicit gemm conv3d: " + kargs.feat_dtype.to_string());
             }
         }
-        self_t::run(kargs, stream);
+        super_t::run(kargs, stream);
     }
 };
 

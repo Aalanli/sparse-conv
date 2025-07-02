@@ -8,7 +8,8 @@
 
 #include "json.hpp"
 
-#define CHECK_CUDA_CALL(call)                                                                                     \
+// driver api check
+#define CHECK_CU_CALL(call)                                                                                     \
     do {                                                                                                \
         CUresult _e = call;                                                                             \
         if (_e != CUDA_SUCCESS) {                                                                       \
@@ -20,6 +21,16 @@
         }                                                                                               \
     } while (0)
 
+// runtime api check
+#define CHECK_CUDA_CALL(call)                                                                                     \
+    do {                                                                                                \
+        cudaError_t _e = call;                                                                          \
+        if (_e != cudaSuccess) {                                                                       \
+            std::cerr << "CUDA Error: " << cudaGetErrorName(_e) << " - " << cudaGetErrorString(_e)     \
+                      << " at line " << __LINE__ << std::endl;                                         \
+            std::exit(EXIT_FAILURE);                                                                    \
+        }                                                                                               \
+    } while (0)
 
 using json = nlohmann::json;
 
@@ -30,16 +41,16 @@ int cdiv(int a, int b);
 template <typename F>
 double record(F &&func, CUstream stream) {
     cudaEvent_t start, stop;
-    cudaEventCreate(&start);
-    cudaEventCreate(&stop);
-    cudaEventRecord(start, stream);
+    CHECK_CUDA_CALL(cudaEventCreate(&start));
+    CHECK_CUDA_CALL(cudaEventCreate(&stop));
+    CHECK_CUDA_CALL(cudaEventRecord(start, stream));
     func();
-    cudaEventRecord(stop, stream);
-    cudaEventSynchronize(stop);
+    CHECK_CUDA_CALL(cudaEventRecord(stop, stream));
+    CHECK_CUDA_CALL(cudaEventSynchronize(stop));
     float milliseconds = 0.0f;
-    cudaEventElapsedTime(&milliseconds, start, stop);
-    cudaEventDestroy(start);
-    cudaEventDestroy(stop);
+    CHECK_CUDA_CALL(cudaEventElapsedTime(&milliseconds, start, stop));
+    CHECK_CUDA_CALL(cudaEventDestroy(start));
+    CHECK_CUDA_CALL(cudaEventDestroy(stop));
     return static_cast<double>(milliseconds);
 }
 
@@ -76,7 +87,7 @@ double benchmark(F &&func, CUstream stream, const int n_warmup = 3,
         func();
         cudaEventRecord(stop_events[i], stream);
     }
-    cudaEventSynchronize(stop_events[num_iterations - 1]);
+    CHECK_CUDA_CALL(cudaEventSynchronize(stop_events[num_iterations - 1]));
     double total_time = 0.0;
     for (int i = 0; i < num_iterations; ++i) {
         float milliseconds = 0.0f;
@@ -85,7 +96,7 @@ double benchmark(F &&func, CUstream stream, const int n_warmup = 3,
         cudaEventDestroy(start_events[i]);
         cudaEventDestroy(stop_events[i]);
     }
-    cudaFree(buf);
+    CHECK_CUDA_CALL(cudaFree(buf));
     return total_time / num_iterations;
 }
 
@@ -182,6 +193,7 @@ using KArg_t = std::vector<std::pair<Dtype, void*>>;  // (dtype, pointer to data
 /// except triton kernels do not have "threads"
 template <typename KernelArgs_t>
 class TritonKernel {
+protected:
     std::string ptx;
 
     int shared;
@@ -197,7 +209,7 @@ class TritonKernel {
 
 public:
     using KernelArgs = KernelArgs_t;
-    using self_t = TritonKernel<KernelArgs>;
+    using super_t = TritonKernel<KernelArgs>;
 
     TritonKernel(const std::string &ptx, int shared, int global_scratch_size, int num_warps,
             const std::string &kernel_name,
@@ -207,8 +219,8 @@ public:
         kernel_name(kernel_name),
         args(args), divisible_by_16(divisible_by_16)
     {
-        CHECK_CUDA_CALL(cuModuleLoadDataEx(&mod, ptx.data(), 0, nullptr, nullptr));
-        CHECK_CUDA_CALL(cuModuleGetFunction(&func, mod, kernel_name.c_str()));
+        CHECK_CU_CALL(cuModuleLoadDataEx(&mod, ptx.data(), 0, nullptr, nullptr));
+        CHECK_CU_CALL(cuModuleGetFunction(&func, mod, kernel_name.c_str()));
     }
     
     TritonKernel(const json &config) {
@@ -227,16 +239,16 @@ public:
         global_scratch_size = config["global_scratch_size"];
         num_warps = config["num_warps"];
         kernel_name = config["kernel_name"];
-        CHECK_CUDA_CALL(cuModuleLoadDataEx(&mod, ptx.data(), 0, nullptr, nullptr));
-        CHECK_CUDA_CALL(cuModuleGetFunction(&func, mod, kernel_name.c_str()));
+        CHECK_CU_CALL(cuModuleLoadDataEx(&mod, ptx.data(), 0, nullptr, nullptr));
+        CHECK_CU_CALL(cuModuleGetFunction(&func, mod, kernel_name.c_str()));
     }
 
 
     ~TritonKernel() {
-        CHECK_CUDA_CALL(cuModuleUnload(mod));
+        CHECK_CU_CALL(cuModuleUnload(mod));
     }
 
-    void run(KernelArgs &kargs, CUstream stream) {
+    void run(KernelArgs kargs, CUstream stream) {
         auto args = kargs.get_args();
         if (args.size() != this->args.size()) {
             throw std::runtime_error("Argument size mismatch: expected " + std::to_string(this->args.size()) +
@@ -244,27 +256,33 @@ public:
         }
         std::vector<void*> arg_ptrs;
         arg_ptrs.reserve(args.size() + 1);
-        int i = 0;
         for (auto i : divisible_by_16) {
             if (!(i < (int) args.size() && is_div_16(args[i]))) {
                 throw std::runtime_error("Argument at index " + std::to_string(i) +
-                                        " must be divisible by 16");
+                " must be divisible by 16");
             }
         }
-        for (auto [dtype, data] : args) {
+        int i = 0;
+        for (auto &[dtype, data] : args) {
             if (dtype != this->args[i].second) {
                 throw std::runtime_error("Argument type mismatch at index " + std::to_string(i) +
                                         ": expected " + this->args[i].second.to_string() +
                                         ", got " + dtype.to_string());
             }
-            arg_ptrs.push_back(data);
+            if (dtype.is_ptr) {
+                arg_ptrs.push_back(&data);
+            } else {
+                arg_ptrs.push_back(data);
+            }
             i += 1;
         }
         assert(global_scratch_size == 0 && "global_scratch_size must be 0 for now");
-        arg_ptrs.push_back(nullptr);  // Placeholder for global scratch, not used currently
+        CUdeviceptr global_scratch = 0;  // Not used, placeholder
+        arg_ptrs.push_back(&global_scratch);  // Placeholder for global scratch, not used currently
 
         auto [gx, gy, gz] = blocks(kargs);
-        CHECK_CUDA_CALL(cuLaunchKernel(
+
+        CHECK_CU_CALL(cuLaunchKernel(
             func, 
             gx, gy, gz,
             num_warps * 32, 1, 1,
@@ -272,7 +290,7 @@ public:
     }
 
 
-    bool can_run(const KernelArgs &kargs) const {
+    bool can_run(KernelArgs &kargs) const {
         auto args = kargs.get_args();
         if (args.size() != this->args.size()) {
             return false; 
@@ -282,8 +300,6 @@ public:
                 return false;  // Argument at index i must be divisible by 16
             }
         }
-        std::vector<void*> arg_ptrs;
-        arg_ptrs.reserve(args.size());
         int i = 0;
         for (auto [dtype, data] : args) {
             if (dtype != this->args[i].second) {

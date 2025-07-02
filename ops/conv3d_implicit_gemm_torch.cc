@@ -57,7 +57,7 @@ torch::Tensor conv3d_implicit_gemm_torch_forward(torch::Tensor features,  // [N,
 
     int N = features.size(0);
     int D = features.size(1);
-    int NPrime = indices.size(0);
+    int NPrime = indices.size(1);
     int NPrimeStride = indices.stride(0);
     int DPrime = weights.size(2);
 
@@ -67,7 +67,7 @@ torch::Tensor conv3d_implicit_gemm_torch_forward(torch::Tensor features,  // [N,
     auto output = torch::zeros({NPrime, DPrime}, features.options());
     auto mask_i = torch::empty({NP, K3}, features.options().dtype(torch::kBool));
     
-    torch::Tensor out_perm;
+    torch::Tensor out_perm = torch::tensor({0});
     if (sorted) {
         auto sort_dtype = K3 <= 32 ? torch::kInt32 : torch::kInt64;
         auto sort_inds = torch::empty({NPrime}, features.options().dtype(sort_dtype));
