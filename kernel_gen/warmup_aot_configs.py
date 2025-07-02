@@ -32,7 +32,7 @@ def warmup_full():
     configs = (
         (out_dtype, weight_dtype, acc_dtype, N, N_PRIME, kernel_size)
         for out_dtype in [torch.float32, torch.float16]
-        for acc_dtype in ['fp32', 'fp16']
+        for acc_dtype in ['fp32']
         for weight_dtype in [torch.float16, torch.float32]
         for N in SEQS
         for N_PRIME in SEQS
