@@ -16,7 +16,7 @@
             const char *err, *str;                                                                      \
             cuGetErrorName(_e, &err);                                                                   \
             cuGetErrorString(_e, &str);                                                                 \
-            std::cerr << "CUDA Error: " << err << " - " << str << " at line " << __LINE__ << std::endl; \
+            std::cerr << "CUDA driver Error: " << err << " - " << str << " at " << __FILE__ << ":" << __LINE__ << std::endl; \
             std::exit(EXIT_FAILURE);                                                                    \
         }                                                                                               \
     } while (0)
@@ -245,6 +245,8 @@ public:
 
 
     ~TritonKernel() {
+        // we don't check for errors here, because this class is usually part of a global state whose destructor is called at the end
+        // which may be after the pytorch cuda context is destroyed
         cuModuleUnload(mod);
     }
 
@@ -361,10 +363,10 @@ public:
         for (const auto &value : kmap) {
             KHash_t khash = KernelArgs::deserialize(value["khash"]);
             int index = value["index"];
-            if (kernel_map.find(khash) != kernel_map.end()) {
+            auto khash_with_sm = std::make_tuple(khash, value["sm"].get<int>());
+            if (kernel_map.find(khash_with_sm) != kernel_map.end()) {
                 std::cerr << "Warning: Duplicate kernel map entry " << value.dump() << std::endl;
             } else {
-                auto khash_with_sm = std::make_tuple(khash, value["sm"].get<int>());
                 kernel_map[khash_with_sm] = index;
                 kernel_times[khash_with_sm] = value["times"].get<std::vector<double>>();
                 kernel_indices[khash_with_sm] = value["kidx"].get<std::vector<int>>();

@@ -169,7 +169,7 @@ def generate_ptx_from_config(configs: list[dict], functions: dict[str, JITFuncti
             min_idx = min(range(len(ker_configs)), key=lambda i: ker_configs[i]['time'][0])
             ker_config = ker_configs[min_idx]
             
-            ker_config_str = str(ker_config['config']) + " sm: " + str(sm)
+            ker_config_str = str(ker_config['config']) + " sm: " + str(sm) + " weight dtype: " + str(config['key']['weight_dtype']) + " dtype: " + str(config['key']['dtype'])
             if ker_config_str in compiled_kernels[ker_name]:
                 continue
             compiled_kernels[ker_name].add(ker_config_str)

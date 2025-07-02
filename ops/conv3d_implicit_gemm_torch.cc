@@ -8,10 +8,20 @@
 #include <cstdint>
 #include <tuple>
 #include <vector>
+#include <set>
 
-#include "c10/core/ScalarType.h"
 #include "conv3d_implicit_gemm_T.h"
-#include "torch/csrc/autograd/generated/variable_factories.h"
+
+thread_local static std::set<int> cu_ctx_init;
+
+void initialize_torch_cuda_ctx(int device) {
+    if (cu_ctx_init.count(device)) {
+        return;  // already initialized
+    }
+    cu_ctx_init.insert(device);
+    auto tensor = torch::randn({1}, torch::TensorOptions().device(torch::kCUDA, device).dtype(torch::kFloat32).requires_grad(true));
+    tensor.backward();
+}
 
 Dtype get_dtype(const torch::Tensor &tensor) {
     if (tensor.dtype() == torch::kFloat32) {
@@ -48,6 +58,7 @@ torch::Tensor conv3d_implicit_gemm_torch_forward(torch::Tensor features,  // [N,
                "weights must be of type float32 or float16");
                TORCH_CHECK(K * K * K <= 64, "K**3 must be less than or equal to 64");
     auto stream = at::cuda::getCurrentCUDAStream().stream();
+    initialize_torch_cuda_ctx(features.get_device());
 
     if (!features.is_contiguous()) {
         features = features.contiguous();
@@ -72,7 +83,7 @@ torch::Tensor conv3d_implicit_gemm_torch_forward(torch::Tensor features,  // [N,
     if (sorted) {
         auto sort_dtype = K3 <= 32 ? torch::kInt32 : torch::kInt64;
         auto sort_inds = torch::empty({NPrime}, features.options().dtype(sort_dtype));
-        get_implicit_sort_kernels()->run({
+        get_implicit_sort_kernels().get()->run({
             indices.data_ptr(),
             sort_inds.data_ptr(),
             get_dtype(sort_inds),
@@ -84,7 +95,7 @@ torch::Tensor conv3d_implicit_gemm_torch_forward(torch::Tensor features,  // [N,
         indices = indices.index_select(1, out_perm);
     }
 
-    get_implicit_gemm_mask_kernels()->run({
+    get_implicit_gemm_mask_kernels().get()->run({
         indices.data_ptr(),
         mask_i.data_ptr(),
         NPrime,
@@ -114,7 +125,7 @@ torch::Tensor conv3d_implicit_gemm_torch_forward(torch::Tensor features,  // [N,
         sorted
     };
 
-    get_implicit_gemm_kernels()->run(args, stream);
+    get_implicit_gemm_kernels().get()->run(args, stream);
     return output;
 }
 
@@ -142,7 +153,7 @@ std::tuple<torch::Tensor, torch::Tensor> conv3d_implicit_gemm_torch_backward(tor
     auto stream = at::cuda::getCurrentCUDAStream().stream();
 
 
-    get_implicit_gemm_df_kernels()->run({
+    get_implicit_gemm_df_kernels().get()->run({
         dout.data_ptr(),
         feats.data_ptr(),
         weights.data_ptr(),
@@ -160,7 +171,7 @@ std::tuple<torch::Tensor, torch::Tensor> conv3d_implicit_gemm_torch_backward(tor
         Dtype::from_string(acc_dtype)
     }, stream);
 
-    get_implicit_gemm_dw_kernels()->run({
+    get_implicit_gemm_dw_kernels().get()->run({
         dout.data_ptr(),
         feats.data_ptr(),
         weights.data_ptr(),

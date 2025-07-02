@@ -1,5 +1,37 @@
 #include "triton_aot_utils.h"
 
+#include <mutex>
+
+// rust-like Mutex class for managing unique_ptr instances, cuz it's convenient
+template <typename T>
+class MutexGuard {
+private:
+    std::lock_guard<std::mutex> lock;
+    T *instance;
+public:
+    MutexGuard(std::unique_ptr<T> &instance, std::mutex &mtx)
+        : lock(mtx), instance(instance.get()) {}
+    T* get() {
+        return instance;
+    }
+};
+
+template <typename T>
+class Mutex {
+private:
+    std::mutex mtx;
+    std::unique_ptr<T> instance;
+public:
+    Mutex() : instance(nullptr) {}
+    void operator=(std::unique_ptr<T> &&new_instance) {
+        std::lock_guard<std::mutex> lock(mtx);
+        instance = std::move(new_instance);
+    }
+    MutexGuard<T> lock() {
+        return MutexGuard<T>(instance, mtx);
+    }
+};
+
 int quant_N(int N);
 
 struct IdxSortKernelArgs {
@@ -395,9 +427,9 @@ public:
 
 void save_kernel_map(std::string kernel_map_file);
 
-TritonAotKernels<ImplicitGemmConv3dKernelT>* get_implicit_gemm_kernels();
-TritonAotKernels<ImplicitGemmSortKernel>* get_implicit_sort_kernels();
-TritonAotKernels<ImplicitGemmMaskKernel>* get_implicit_gemm_mask_kernels();
-TritonAotKernels<ImplicitGemmConv3dDFKernel>* get_implicit_gemm_df_kernels();
-TritonAotKernels<ImplicitGemmConv3dDWKernel>* get_implicit_gemm_dw_kernels();
+MutexGuard<TritonAotKernels<ImplicitGemmConv3dKernelT>> get_implicit_gemm_kernels();
+MutexGuard<TritonAotKernels<ImplicitGemmSortKernel>> get_implicit_sort_kernels();
+MutexGuard<TritonAotKernels<ImplicitGemmMaskKernel>> get_implicit_gemm_mask_kernels();
+MutexGuard<TritonAotKernels<ImplicitGemmConv3dDFKernel>> get_implicit_gemm_df_kernels();
+MutexGuard<TritonAotKernels<ImplicitGemmConv3dDWKernel>> get_implicit_gemm_dw_kernels();
 

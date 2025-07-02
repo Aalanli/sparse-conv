@@ -195,10 +195,10 @@ def test_triton_jit_kernels_conv3d_subm(coords, dim_in, dim_out, kernel_size):
 def test():
     idx = get_voxel_coords(100000, device='cuda')
 
-    # compare_conv3d_subm(idx, 16, 32, 3)
-    # compare_conv3d_subm(idx, 64, 64, 3)
-    # compare_conv3d_subm(idx, 128, 128, 3)
-    # compare_conv3d_subm(idx, 64, 128, 3)
+    compare_conv3d_subm(idx, 16, 32, 3)
+    compare_conv3d_subm(idx, 64, 64, 3)
+    compare_conv3d_subm(idx, 128, 128, 3)
+    compare_conv3d_subm(idx, 64, 128, 3)
 
     # test_reference_backwards(idx, 16, 16, 3)
     # test_reference_backwards(idx, 16, 32, 3)
