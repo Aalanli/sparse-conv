@@ -1,6 +1,8 @@
+#pragma once
 #include "triton_aot_utils.h"
 
 #include <mutex>
+#include <sstream>
 
 // rust-like Mutex class for managing unique_ptr instances, cuz it's convenient
 template <typename T>
@@ -34,8 +36,10 @@ public:
 
 int quant_N(int N);
 
+void set_zero(void* ptr, Dtype dtype, int size, CUstream stream);
+
 struct IdxSortKernelArgs {
-    using KHash_t = std::tuple<int, int, std::string>;
+    using KHash_t = std::tuple<int, int, bool, std::string>;
     void *indices; // [K3, N]
     void *line_mask; // [N]
     Dtype mask_dtype;
@@ -47,16 +51,17 @@ struct IdxSortKernelArgs {
         json res;
         res["N"] = std::get<0>(khash);
         res["K3"] = std::get<1>(khash);
-        res["mask_dtype"] = std::get<2>(khash);
+        res["N_DIV"] = std::get<2>(khash);
+        res["mask_dtype"] = std::get<3>(khash);
         return res;
     }
 
     static KHash_t deserialize(const json &j) {
-        return std::make_tuple(j["N"].get<int>(), j["K3"].get<int>(), j["mask_dtype"].get<std::string>());
+        return std::make_tuple(j["N"].get<int>(), j["K3"].get<int>(), j["N_DIV"].get<bool>(), j["mask_dtype"].get<std::string>());
     }
 
     KHash_t khash() const {
-        return std::make_tuple(quant_N(N), K3, mask_dtype.to_string());
+        return std::make_tuple(quant_N(N), K3, N % 16 == 0, mask_dtype.to_string());
     }
 
     KArg_t get_args() const {
@@ -81,7 +86,7 @@ public:
     
     std::tuple<int, int, int> blocks(const IdxSortKernelArgs &args) const override {
         return {
-            cdiv(args.N, BLOCK_N) * cdiv(args.K3, BLOCK_K),
+            cdiv(args.N, BLOCK_N),
             1,
             1
         };
@@ -93,7 +98,7 @@ public:
 };
 
 struct GemmMaskKernelArgs {
-    using KHash_t = std::tuple<int, int, int>;
+    using KHash_t = std::tuple<int, int, int, bool, bool>;
     void* indices; // [K3, N]
     void* mask; // [N', K3]
     int N;
@@ -106,15 +111,19 @@ struct GemmMaskKernelArgs {
         res["N"] = std::get<0>(khash);
         res["K3"] = std::get<1>(khash);
         res["BLOCK_N"] = std::get<2>(khash);
+        res["N_DIV"] = std::get<3>(khash);
+        res["NP_DIV"] = std::get<4>(khash);
         return res;
     }
 
     static KHash_t deserialize(const json &j) {
-        return std::make_tuple(j["N"].get<int>(), j["K3"].get<int>(), j["BLOCK_N"].get<int>());
+        return std::make_tuple(j["N"].get<int>(), j["K3"].get<int>(), j["BLOCK_N"].get<int>(), 
+                               j["N_DIV"].get<bool>(), j["NP_DIV"].get<bool>());
     }
 
     KHash_t khash() const {
-        return std::make_tuple(quant_N(N), K3, BLOCK_N);
+        return std::make_tuple(quant_N(N), K3, BLOCK_N, 
+                               N % 16 == 0, N_stride % 16 == 0);
     }
 
     KArg_t get_args() {
@@ -139,7 +148,7 @@ public:
     
     std::tuple<int, int, int> blocks(const GemmMaskKernelArgs &args) const override {
         return {
-            cdiv(args.N, BLOCK_N) * cdiv(args.K3, BLOCK_K),
+            cdiv(args.N, BLOCK_N),
             1,
             1
         };
@@ -169,8 +178,8 @@ struct ImplicitGemmConv3dKernelTArgs {
     int K;
     int BLOCK_N;
     bool sorted;
-    // feat_dtype, weight_dtype, acc_dtype, N, NPrime, D, DPrime, K, BLOCK_N, PARALLEL_K, sorted
-    using KHash_t = std::tuple<Dtype, Dtype, Dtype, int, int, int, int, int, int, bool>;
+    // feat_dtype, weight_dtype, acc_dtype, N, NPrime, D, DPrime, K, BLOCK_N, PARALLEL_K, sorted, NPrime_stride_div
+    using KHash_t = std::tuple<Dtype, Dtype, Dtype, int, int, int, int, int, int, bool, bool>;
 
     static json serialize(const KHash_t& args) {
         json res;
@@ -184,6 +193,7 @@ struct ImplicitGemmConv3dKernelTArgs {
         res["K"] = std::get<7>(args);
         res["BLOCK_N"] = std::get<8>(args);
         res["sorted"] = std::get<9>(args);
+        res["NPrime_stride_div"] = std::get<10>(args);
         return res;
     }
 
@@ -198,14 +208,15 @@ struct ImplicitGemmConv3dKernelTArgs {
             j["DPrime"].get<int>(),
             j["K"].get<int>(),
             j["BLOCK_N"].get<int>(),
-            j["sorted"].get<bool>()
+            j["sorted"].get<bool>(),
+            j["NPrime_stride_div"].get<bool>()
         );
     }
 
     KHash_t khash() const {
         return std::make_tuple(
             feat_dtype, weight_dtype, acc_dtype,
-            quant_N(N), quant_N(NPrime), D, DPrime, K, BLOCK_N, sorted
+            quant_N(N), quant_N(NPrime), D, DPrime, K, BLOCK_N, sorted, N_prime_stride % 16 == 0
         );
     }
 
@@ -248,7 +259,7 @@ public:
     
     std::tuple<int, int, int> blocks(const ImplicitGemmConv3dKernelTArgs &args) const override {
         return {
-            cdiv(args.NPrime, BLOCK_N) * cdiv(args.DPrime, BLOCK_Dp),
+            cdiv(args.NPrime, BLOCK_N) * cdiv(args.DPrime, BLOCK_Dp) * PARALLEL_K,
             1, 1
         };
     }
@@ -260,15 +271,20 @@ public:
 
     void run(KernelArgs kargs, CUstream stream) {
         if (PARALLEL_K > 1) {
-            if (kargs.feat_dtype.type == Dtype::FP16) {
-                cuMemsetD16((CUdeviceptr) kargs.out, 0, kargs.NPrime * kargs.DPrime);
-            } else if (kargs.feat_dtype.type == Dtype::FP32) {
-                cuMemsetD32((CUdeviceptr) kargs.out, 0, kargs.NPrime * kargs.DPrime);
-            } else {
-                throw std::runtime_error("Unsupported feature dtype for implicit gemm conv3d: " + kargs.feat_dtype.to_string());
-            }
+            set_zero(kargs.out, kargs.feat_dtype, kargs.NPrime * kargs.DPrime, stream);
         }
         super_t::run(kargs, stream);
+    }
+
+    std::string signature() const {
+        std::ostringstream ss;
+        ss << super_t::signature() << " {"
+           << "BLOCK_N: " << BLOCK_N << ", "
+           << "BLOCK_K: " << BLOCK_K << ", "
+           << "BLOCK_Dp: " << BLOCK_Dp << ", "
+           << "PARALLEL_K: " << PARALLEL_K << "}";
+
+        return ss.str();
     }
 };
 
@@ -377,13 +393,7 @@ public:
     }
 
     void run(KernelArgs kargs, CUstream stream) {
-        if (kargs.feat_dtype.type == Dtype::FP16) {
-            cuMemsetD16((CUdeviceptr) kargs.dfeatures, 0, kargs.N * kargs.D);
-        } else if (kargs.feat_dtype.type == Dtype::FP32) {
-            cuMemsetD32((CUdeviceptr) kargs.dfeatures, 0, kargs.N * kargs.D);
-        } else {
-            throw std::runtime_error("Unsupported feature dtype for implicit gemm conv3d DF: " + kargs.feat_dtype.to_string());
-        }
+        set_zero(kargs.dfeatures, kargs.feat_dtype, kargs.N * kargs.D, stream);
         super_t::run(kargs, stream);
     }
 };
@@ -413,13 +423,7 @@ public:
 
     void run(KernelArgs kargs, CUstream stream) {
         if (PARALLEL_K > 1) {
-            if (kargs.weight_dtype.type == Dtype::FP16) {
-                cuMemsetD16((CUdeviceptr) kargs.dweights, 0, kargs.K3 * kargs.D * kargs.DPrime);
-            } else if (kargs.weight_dtype.type == Dtype::FP32) {
-                cuMemsetD32((CUdeviceptr) kargs.dweights, 0, kargs.K3 * kargs.D * kargs.DPrime);
-            } else {
-                throw std::runtime_error("Unsupported feature dtype for implicit gemm conv3d DW: " + kargs.feat_dtype.to_string());
-            }
+            set_zero(kargs.dweights, kargs.weight_dtype, kargs.K3 * kargs.D * kargs.DPrime, stream);
         }
         super_t::run(kargs, stream);
     }

@@ -27,7 +27,7 @@
         cudaError_t _e = call;                                                                          \
         if (_e != cudaSuccess) {                                                                       \
             std::cerr << "CUDA Error: " << cudaGetErrorName(_e) << " - " << cudaGetErrorString(_e)     \
-                      << " at line " << __LINE__ << std::endl;                                         \
+                      << " at " << __FILE__ << ":" << __LINE__ << std::endl;                                         \
             std::exit(EXIT_FAILURE);                                                                    \
         }                                                                                               \
     } while (0)
@@ -431,7 +431,12 @@ public:
         }
 
         int kernel_index = kernel_map[khash_with_sm];
-        kernels[kernel_index]->run(args, stream);
+        if (kernels[kernel_index] != nullptr && kernels[kernel_index]->can_run(args)) {
+            kernels[kernel_index]->run(args, stream);
+        } else {
+            kernel_map.erase(khash_with_sm);
+            run(args, stream);  // Retry with the updated kernel map
+        }
     }
 };
 

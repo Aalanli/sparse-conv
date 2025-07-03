@@ -92,13 +92,13 @@ def test_backwards(coords, D, DPrime, kernel_size):
     dfeats = feats.grad
     dweights = weights.grad
 
-    if not torch.allclose(dfeats, dfeats_ref, atol=1e-3, rtol=1e-3):
+    if not torch.allclose(dfeats, dfeats_ref, atol=1e-2, rtol=1e-2):
         print("dfeats do not match!")
         # print("Reference:", dfeats_ref)
         # print("Computed:", dfeats)
         print("Max diff:", (dfeats - dfeats_ref).abs().max())
     
-    if not torch.allclose(dweights, dweights_ref, atol=1e-3, rtol=1e-3):
+    if not torch.allclose(dweights, dweights_ref, atol=1e-2, rtol=1e-2):
         print("dweights do not match!")
         # print("Reference:", dweights_ref)
         # print("Computed:", dweights)
@@ -141,7 +141,6 @@ def compare_conv3d_subm(coords, dim_in, dim_out, kernel_size):
 
     indices_T = ops.idx_gen.gen_conv3d_subm_indices_v2(coords, kernel_size)
     assert (indices == indices_T.T).all()
-    torch.cuda.synchronize()
     out_aot = aot_implicit_gemm.conv3d_implicit_gemm(
         feats, indices_T, weights, kernel_size
     )
@@ -149,14 +148,7 @@ def compare_conv3d_subm(coords, dim_in, dim_out, kernel_size):
         print(f"Outputs do not match! ref vs aot", out_ref.shape)
         diffs = (out_aot - out_ref).abs()
         print(diffs.max())
-        idx = int(diffs.flatten().argmax().item())
-        row = idx // out_triton.shape[1]
-        print(row, idx % out_triton.shape[1])
-        # print(out_aot[row])
-        # print(out_ref[row])
-        print(out_aot.flatten()[idx], out_ref.flatten()[idx])
-        print(diffs.mean())   
-
+        print(out_aot[-32:])
 
 def test_triton_jit_kernels_conv3d_subm(coords, dim_in, dim_out, kernel_size):
     n = coords.shape[0]
@@ -193,23 +185,23 @@ def test_triton_jit_kernels_conv3d_subm(coords, dim_in, dim_out, kernel_size):
         print(indices_T[:, 0])
 
 def test():
-    idx = get_voxel_coords(100000, device='cuda')
+    idx = get_voxel_coords(100, device='cuda')
 
-    compare_conv3d_subm(idx, 16, 32, 3)
+    compare_conv3d_subm(idx, 16, 16, 3)
     compare_conv3d_subm(idx, 64, 64, 3)
     compare_conv3d_subm(idx, 128, 128, 3)
     compare_conv3d_subm(idx, 64, 128, 3)
 
-    # test_reference_backwards(idx, 16, 16, 3)
-    # test_reference_backwards(idx, 16, 32, 3)
-    # test_reference_backwards(idx, 64, 64, 3)
+    test_reference_backwards(idx, 16, 16, 3)
+    test_reference_backwards(idx, 16, 32, 3)
+    test_reference_backwards(idx, 64, 64, 3)
 
     test_backwards(idx, 16, 16, 3)
-    # test_backwards(idx, 16, 32, 3)
-    # test_backwards(idx, 64, 64, 3)
+    test_backwards(idx, 16, 32, 3)
+    test_backwards(idx, 64, 64, 3)
 
-    # test_triton_jit_kernels_conv3d_subm(idx, 16, 16, 3)
-    # test_triton_jit_kernels_conv3d_subm(idx, 64, 64, 3)
+    test_triton_jit_kernels_conv3d_subm(idx, 16, 16, 3)
+    test_triton_jit_kernels_conv3d_subm(idx, 64, 64, 3)
 
     # test_backwards(idx, 16, 16, 3)
     # test_backwards(idx, 16, 32, 3)

@@ -112,33 +112,29 @@ class Conv3dTransposed(ImplBase):
         return conv3d_implicit_gemm_T(
             feats, indices, self.weight, self.kernel_size, sort=sort)
 
+class Conv3dTransposedAOT(ImplBase):
+    name = 'conv3d_transposed_aot'
+    def __init__(self, in_channels, out_channels, kernel_size=3, weight_dtype=torch.float16):
+        self.weight = torch.nn.Parameter(
+            torch.randn(kernel_size**3, in_channels, out_channels, device='cuda', dtype=weight_dtype)
+        )
+        self.kernel_size = kernel_size
+
+    def forward(self, feats, coords, spatial_range):
+        # coords: [N, 4] where last dimension is (x, y, z, batch_id)
+        # feats: [N, D]
+        indices = ops.idx_gen.gen_conv3d_subm_indices_v2(coords, self.kernel_size)
+        D = feats.shape[1]
+        sort = D >= 64
+        return ops.conv3d_implicit_gemm.conv3d_implicit_gemm(
+            feats, indices, self.weight, self.kernel_size, sorted=sort)
+
+
 
 import ops.idx_gen
-# from triton_spconv import Conv3DSubmModule
 import pandas as pd
 from tabulate import tabulate
-# class ImplicitGemmAccf32(ImplBase):
-#     name = 'implicit_gemm_accf32'
 
-#     def __init__(self, in_channels, out_channels, kernel_size=3):
-#         self.layer = Conv3DSubmModule(kernel_size, in_channels, out_channels, acc_dtype=tl.float32).cuda()
-
-#     def forward(self, feats, coords, spatial_range):
-#         # coords: [N, 4] where last dimension is (x, y, z, batch_id)
-#         # feats: [N, D]
-#         return self.layer(feats, coords)
-    
-# class ImplicitGemmAccf16(ImplBase):
-#     name = 'implicit_gemm_accf16'
-
-#     def __init__(self, in_channels, out_channels, kernel_size=3):
-#         self.layer = Conv3DSubmModule(kernel_size, in_channels, out_channels, acc_dtype=tl.float16).cuda()
-
-#     def forward(self, feats, coords, spatial_range):
-#         # coords: [N, 4] where last dimension is (x, y, z, batch_id)
-#         # feats: [N, D]
-#         return self.layer(feats, coords)
-    
 
 class NaiveConv3D(ImplBase):
     name = 'naive_conv3d'
@@ -171,7 +167,6 @@ def benchmark_impl(impl_cls: type[ImplBase], Ns, Ds, warmup=10, runs=50, device=
             for N in Ns:
                 # generate data
                 feats = torch.randn(N, D, device=device, dtype=dtype)
-                # coords = generate_random_coords(N, max_coord=max_coord, batch_size=batch, device=device)
                 coords = vox_coords[:N]
                 
                 torch.cuda.synchronize() 
@@ -190,8 +185,43 @@ def benchmark_impl(impl_cls: type[ImplBase], Ns, Ds, warmup=10, runs=50, device=
                 print(f"Impl={impl.name}, D={D}, N={N}, time={elapsed:.3f} ms")
     return results
 
+def benchmark_backwards(impl_cls: type[ImplBase], Ns, Ds, warmup=10, runs=50, device='cuda', dtype=torch.float16):
+    results = {D: [] for D in Ds}
+    vox_coords = get_voxel_coords(max_seq=max(Ns), device=device)
+    spatial_range = (vox_coords.max(dim=0).values + 1).tolist()  # [batch_size, x, y, z]
 
-def plot_results(all_results, Ns, Ds, out_file='benchmark.png'):
+    with torch.autocast(device_type=device, dtype=torch.float16):
+        for D in Ds:
+            # instantiate implementation
+            impl = impl_cls(in_channels=D, out_channels=D, kernel_size=3)
+            for N in Ns:
+                # generate data
+                feats = torch.randn(N, D, device=device, dtype=dtype)
+                coords = vox_coords[:N]
+
+                times = []
+                for it in range(warmup + runs):
+                    # warmup
+                    if it < warmup:
+                        out = impl.forward(feats, coords, spatial_range).sum()
+                        out.backward()
+                    else:
+                        out = impl.forward(feats, coords, spatial_range).sum()
+                        start_event = torch.cuda.Event(enable_timing=True)
+                        end_event = torch.cuda.Event(enable_timing=True)
+                        torch.cuda.synchronize()
+                        start_event.record()
+                        out.backward()
+                        end_event.record()
+                        torch.cuda.synchronize()
+                        t0 = start_event.elapsed_time(end_event)
+                        times.append(t0)
+                elapsed = sum(times) / len(times)
+                results[D].append(elapsed)
+                print(f"Impl={impl.name}, D={D}, N={N}, time={elapsed:.5f} ms")
+    return results
+
+def plot_results(all_results, Ns, Ds, out_file='benchmark.png', title_suffix=''):
     for impl_name, results in all_results.items():
         for D in Ds:
             plt.plot(Ns, results[D], marker='o', label=f"{impl_name}-D{D}")
@@ -199,7 +229,7 @@ def plot_results(all_results, Ns, Ds, out_file='benchmark.png'):
     plt.ylabel('Avg execution time (ms)')
     sm_version = torch.cuda.get_device_capability()
 
-    plt.title(f'SubM 3D Sparse Conv Benchmark, SM{sm_version[0]}{sm_version[1]}' )
+    plt.title(f'SubM 3D Sparse Conv Benchmark, SM{sm_version[0]}{sm_version[1]} {title_suffix}' )
     plt.legend()
     plt.grid(True)
     plt.savefig(out_file)
@@ -212,34 +242,53 @@ def main():
     parser.add_argument('--Ds', type=int, nargs='+', default=[32])
     parser.add_argument('--runs', type=int, default=50)
     parser.add_argument('--warmup', type=int, default=10)
+    parser.add_argument('--forward', action='store_true', default=False, help="Benchmark forward pass")
+    parser.add_argument('--backward', action='store_true', default=False, help="Benchmark backward pass")
     parser.add_argument('--plot_file', type=str, required=False, default=None)
     args = parser.parse_args()
 
     # list of implementations
-    implementations = [SpconvSubM, TorchsparseSubM, Conv3dTransposed]
+    implementations = [SpconvSubM, TorchsparseSubM, Conv3dTransposedAOT]
 
-    all_results = {}
-    for impl in implementations:
-        all_results[impl.name] = benchmark_impl(
-            impl, args.Ns, args.Ds,
-            warmup=args.warmup, runs=args.runs
-        )
-    # all_results['implicit_gemm'] = benchmark_impl(
-    #     ImplicitGemm, args.Ns, args.Ds,
-    #     warmup=args.warmup, runs=args.runs
-    # )
-    if args.plot_file is not None:
-        plot_results(all_results, args.Ns, args.Ds, out_file=args.plot_file)
-    
-    for D in args.Ds:
-        print(f"Results for D={D}:")
-        # Build a table: rows indexed by N, columns by implementation name
-        data = {impl_name: results[D] for impl_name, results in all_results.items()}
-        df = pd.DataFrame(data, index=args.Ns)
-        df.index.name = 'N'
-        print(tabulate(df, headers='keys', tablefmt='psql'))
-        print("")
+    if args.forward:
+        forward_results = {}
+        for impl in implementations:
+            forward_results[impl.name] = benchmark_impl(
+                impl, args.Ns, args.Ds,
+                warmup=args.warmup, runs=args.runs
+            )
+        
+        if args.plot_file is not None:
+            plot_results(forward_results, args.Ns, args.Ds, out_file=args.plot_file, title_suffix='Forward Pass')
+        
+        for D in args.Ds:
+            print(f"Results for D={D}:")
+            # Build a table: rows indexed by N, columns by implementation name
+            data = {impl_name: results[D] for impl_name, results in forward_results.items()}
+            df = pd.DataFrame(data, index=args.Ns)
+            df.index.name = 'N'
+            print(tabulate(df, headers='keys', tablefmt='psql'))
+            print("")
 
+    if args.backward:    
+        # Benchmark backwards pass
+        backward_results = {}
+        for impl in implementations:
+            backward_results[impl.name] = benchmark_backwards(
+                impl, args.Ns, args.Ds,
+                warmup=args.warmup, runs=args.runs
+            )
+        if args.plot_file is not None:
+            plot_results(backward_results, args.Ns, args.Ds, out_file=args.plot_file.replace('.png', '_backward.png'), title_suffix='Backward Pass')
+
+        for D in args.Ds:
+            print(f"Backward Results for D={D}:")
+            # Build a table: rows indexed by N, columns by implementation name
+            data = {impl_name: results[D] for impl_name, results in backward_results.items()}
+            df = pd.DataFrame(data, index=args.Ns)
+            df.index.name = 'N'
+            print(tabulate(df, headers='keys', tablefmt='psql'))
+            print("")
 
 if __name__ == '__main__':
     main()

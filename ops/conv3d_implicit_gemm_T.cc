@@ -13,6 +13,23 @@ int quant_N(int N) {
     return thresholds.back();
 }
 
+
+void set_zero(void* ptr, Dtype dtype, int size, CUstream stream) {
+    if (dtype.type == Dtype::FP16) {
+        cuMemsetD16Async((CUdeviceptr) ptr, 0, size, stream);
+    } else if (dtype.type == Dtype::FP32) {
+        cuMemsetD32Async((CUdeviceptr) ptr, 0, size, stream);
+    } else if (dtype.type == Dtype::INT32) {
+        cuMemsetD32Async((CUdeviceptr) ptr, 0, size, stream);
+    } else if (dtype.type == Dtype::INT64) {
+        cuMemsetD32Async((CUdeviceptr) ptr, 0, size * 2, stream);
+    } else if (dtype.type == Dtype::BOOL) {
+        cuMemsetD8Async((CUdeviceptr) ptr, 0, size, stream);
+    } else {
+        throw std::runtime_error("Unsupported dtype for set_zero: " + dtype.to_string());
+    }
+}
+
 extern "C" {
 extern const unsigned char _binary_meta_json_start[];
 extern const unsigned char _binary_meta_json_end[];
@@ -101,3 +118,4 @@ void save_kernel_map(std::string kernel_map_file) {
     file << kmap.dump(4);
     file.close();
 }
+

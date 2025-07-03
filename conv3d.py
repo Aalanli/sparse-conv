@@ -51,20 +51,12 @@ class SparseSubmConv3d(torch.nn.Module):
         # x: (N, C)
         # indices: (N)
         if indices is None:
-            indices = idx_gen.gen_conv3d_subm_indices(x.coords, self.kernel_size)
-        if self.training:
-            self.need_copy = True
-            h = self.weight_master.half()
-            f = conv3d_implicit_gemm.conv3d_implicit_gemm(
-                x.features.half(), indices, h, self.kernel_size, acc_dtype=self.acc_dtype
-            )
-        else:
-            if self.need_copy:
-                self.weight.copy_(self.weight_master.half())
-                self.need_copy = False
-            f = conv3d_implicit_gemm.conv3d_implicit_gemm(
-                x.features.half(), indices, self.weight, self.kernel_size, acc_dtype=self.acc_dtype
-            )
+            indices = idx_gen.gen_conv3d_subm_indices_v2(x.coords, self.kernel_size)
+
+        f = conv3d_implicit_gemm.conv3d_implicit_gemm(
+            x.features, indices, self.weight_master, self.kernel_size, acc_dtype=self.acc_dtype
+        )
+        
         if self.bias is not None:
             f = f + self.bias[None, :]
         return SparseTensor(features=f, coords=x.coords, spatial_range=x.spatial_range)
@@ -103,24 +95,17 @@ class SparseConv3d(torch.nn.Module):
         # x: (N, C)
         # indices: (N)
         if indices is None:
-            new_coords, indices = idx_gen.gen_conv3d_indices(
+            new_coords, indices = idx_gen.gen_conv3d_indices_v2(
                 x.coords, x.spatial_range, self.kernel_size, self.stride, self.pad
             )
         else:
             new_coords = x.coords  # if indices are provided, we assume coords are already aligned
 
-        if self.training:
-            self.need_copy = True
-            f = conv3d_implicit_gemm.conv3d_implicit_gemm(
-                x.features.half(), indices, self.weight_master.half(), self.kernel_size, acc_dtype=self.acc_dtype
-            )
-        else:
-            if self.need_copy:
-                self.weight.copy_(self.weight_master.half())
-                self.need_copy = False
-            f = conv3d_implicit_gemm.conv3d_implicit_gemm(
-                x.features.half(), indices, self.weight, self.kernel_size, acc_dtype=self.acc_dtype
-            )
+        
+        f = conv3d_implicit_gemm.conv3d_implicit_gemm(
+            x.features, indices, self.weight_master, self.kernel_size, acc_dtype=self.acc_dtype
+        )
+        
         if self.bias is not None:
             f = f + self.bias[None, :]
         return SparseTensor(

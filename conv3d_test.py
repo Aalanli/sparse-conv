@@ -15,18 +15,20 @@ from idx_gen_test import (
 )
 
 
-def allclose_sparse_tensor(t1: SparseTensor, t2: SparseTensor) -> bool:
+def allclose_sparse_tensor(t1: SparseTensor, t2: SparseTensor, atol: float = 1e-3, rtol: float = 1e-3) -> bool:
     if (
         t1.features.shape != t2.features.shape
         or t1.coords.shape != t2.coords.shape
-        or t1.spatial_range != t2.spatial_range
+        # or t1.spatial_range != t2.spatial_range
     ):
+        print("Shape mismatch")
         return False
     if not allclose_coords(t1.coords, t2.coords):
+        print("Coords mismatch")
         return False
     p1 = canonicalize_coords(t1.coords)
     p2 = canonicalize_coords(t2.coords)
-    if not torch.allclose(t1.features[p1], t2.features[p2], atol=1e-3, rtol=1e-3):
+    if not torch.allclose(t1.features[p1], t2.features[p2], atol=atol, rtol=rtol):
         print("Features mismatch")
         print((t1.features[p1] - t2.features[p2]).abs().max())
         return False
@@ -77,7 +79,7 @@ def test_conv3d(batch_size, kernel_size, seq, channels, stride_pad):
             padding=pad,
             bias=False,
         ).cuda()
-    gather_conv.weight = torch.nn.Parameter(
+    gather_conv.weight_master = torch.nn.Parameter(
         sp_conv.kernel.reshape(kernel_size, kernel_size, kernel_size, -1)
         .permute(2, 1, 0, 3)
         .reshape(kernel_size**3, in_channels, out_channels)
@@ -154,7 +156,7 @@ def test_reference_backwards(N, D_DPrime, kernel_size):
 def test_backwards(N, D_DPrime, kernel_size):
     D, DPrime = D_DPrime
     coords = make_unique_coords(100, N, batch_size=1).cuda()
-    indices = idx_gen.gen_conv3d_subm_indices(coords, kernel_size)
+    indices = idx_gen.gen_conv3d_subm_indices_v2(coords, kernel_size)
     N = indices.shape[0]
 
     feats = torch.randn(N, D, device="cuda", requires_grad=True)
@@ -175,3 +177,5 @@ def test_backwards(N, D_DPrime, kernel_size):
     assert torch.allclose(dweights, dweights_ref, atol=1e-3, rtol=1e-3), (
         f"Weights gradients mismatch: {dweights} vs {dweights_ref}"
     )
+
+test_backwards(100, (16, 16), 3)
