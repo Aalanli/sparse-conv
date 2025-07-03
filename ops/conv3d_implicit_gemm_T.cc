@@ -115,7 +115,7 @@ void save_kernel_map(std::string kernel_map_file) {
     if (!file.is_open()) {
         throw std::runtime_error("Failed to open kernel map file: " + kernel_map_file);
     }
-    file << kmap.dump(4);
+    file << kmap.dump(-1);
     file.close();
 }
 

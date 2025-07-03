@@ -226,6 +226,6 @@ if __name__ == '__main__':
     output_dir = Path(__file__).parent.parent / 'ops'
     output_dir.mkdir(parents=True, exist_ok=True)
     with open(output_dir / 'meta.json', 'w') as f:
-        json.dump(ccinfo, f, indent=2)
+        json.dump(ccinfo, f)
     with open(output_dir / 'kernel_map.json', 'w') as f:
-        json.dump({}, f, indent=1)
+        json.dump({}, f)
