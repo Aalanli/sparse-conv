@@ -1,35 +1,39 @@
+// Copyright (c) 2025 Waabi Innovation. All rights reserved.
+#ifndef PLATFORM_CPU
 #pragma once
 #include <cuda.h>
 #include <cuda_runtime.h>
+
+#include <iostream>
+#include <map>
 #include <memory>
 #include <vector>
-#include <map>
-#include <iostream>
 
 #include "json.hpp"
 
 // driver api check
-#define CHECK_CU_CALL(call)                                                                                     \
-    do {                                                                                                \
-        CUresult _e = call;                                                                             \
-        if (_e != CUDA_SUCCESS) {                                                                       \
-            const char *err, *str;                                                                      \
-            cuGetErrorName(_e, &err);                                                                   \
-            cuGetErrorString(_e, &str);                                                                 \
-            std::cerr << "CUDA driver Error: " << err << " - " << str << " at " << __FILE__ << ":" << __LINE__ << std::endl; \
-            std::exit(EXIT_FAILURE);                                                                    \
-        }                                                                                               \
+#define CHECK_CU_CALL(call)                                                                                    \
+    do {                                                                                                       \
+        CUresult _e = call;                                                                                    \
+        if (_e != CUDA_SUCCESS) {                                                                              \
+            const char *err, *str;                                                                             \
+            cuGetErrorName(_e, &err);                                                                          \
+            cuGetErrorString(_e, &str);                                                                        \
+            std::cerr << "CUDA driver Error: " << err << " - " << str << " at " << __FILE__ << ":" << __LINE__ \
+                      << std::endl;                                                                            \
+            std::exit(EXIT_FAILURE);                                                                           \
+        }                                                                                                      \
     } while (0)
 
 // runtime api check
-#define CHECK_CUDA_CALL(call)                                                                                     \
-    do {                                                                                                \
-        cudaError_t _e = call;                                                                          \
-        if (_e != cudaSuccess) {                                                                       \
-            std::cerr << "CUDA Error: " << cudaGetErrorName(_e) << " - " << cudaGetErrorString(_e)     \
-                      << " at " << __FILE__ << ":" << __LINE__ << std::endl;                                         \
-            std::exit(EXIT_FAILURE);                                                                    \
-        }                                                                                               \
+#define CHECK_CUDA_CALL(call)                                                                                \
+    do {                                                                                                     \
+        cudaError_t _e = call;                                                                               \
+        if (_e != cudaSuccess) {                                                                             \
+            std::cerr << "CUDA Error: " << cudaGetErrorName(_e) << " - " << cudaGetErrorString(_e) << " at " \
+                      << __FILE__ << ":" << __LINE__ << std::endl;                                           \
+            std::exit(EXIT_FAILURE);                                                                         \
+        }                                                                                                    \
     } while (0)
 
 using json = nlohmann::json;
@@ -87,6 +91,7 @@ double benchmark(F &&func, CUstream stream, const int n_warmup = 3,
         func();
         cudaEventRecord(stop_events[i], stream);
     }
+    // this check can pickup earlier errors
     CHECK_CUDA_CALL(cudaEventSynchronize(stop_events[num_iterations - 1]));
     double total_time = 0.0;
     for (int i = 0; i < num_iterations; ++i) {
@@ -100,16 +105,11 @@ double benchmark(F &&func, CUstream stream, const int n_warmup = 3,
     return total_time / num_iterations;
 }
 
-
+// We model the dtypes apart from torch so we don't have to depend on torch
+// This is so we can use triton AOT kernels in tensorRT
 class Dtype {
-public:
-    enum Type {
-        FP16,
-        FP32,
-        INT32,
-        INT64,
-        BOOL
-    };
+   public:
+    enum Type { FP16, FP32, INT32, INT64, BOOL };
     const Type type;
     const bool is_ptr;
     Dtype(Type type, bool is_ptr = false) : type(type), is_ptr(is_ptr) {}
@@ -154,13 +154,9 @@ public:
         return is_ptr ? "*" + type_str : type_str;
     }
 
-    bool operator==(const Dtype &other) const {
-        return type == other.type && is_ptr == other.is_ptr;
-    }
+    bool operator==(const Dtype &other) const { return type == other.type && is_ptr == other.is_ptr; }
 
-    bool operator!=(const Dtype &other) const {
-        return !(*this == other);
-    }
+    bool operator!=(const Dtype &other) const { return !(*this == other); }
 
     void operator=(const Dtype &other) {
         if (this != &other) {
@@ -168,32 +164,31 @@ public:
         }
     }
 
-    bool operator<(const Dtype &other) const {
-        return std::tie(type, is_ptr) < std::tie(other.type, other.is_ptr); 
-    }
+    bool operator<(const Dtype &other) const { return std::tie(type, is_ptr) < std::tie(other.type, other.is_ptr); }
 };
 
-bool is_div_16(const std::pair<Dtype, void*> &arg);
+bool is_div_16(const std::pair<Dtype, void *> &arg);
 
+void set_zero(void *ptr, Dtype dtype, int size, CUstream stream);
 
 /// KernelArgs is a more flexible representation of kernel parameters. And must satisfy the following interface:
-/// typename KHash_t; a cheap type that is hashable and identifies the performance sensitive parameters of the kernel, such as dimensions
-/// KHash_t khash() const; get the hash of the kernel parameters
-/// std::vector<std::pair<Dtype, void*>> get_args() const; 
-/// static KHash_t deserialize(const json &);  // Deserialize the hash from JSON
-/// static json serialize(KHash_t) const;  // Serialize the kernel parameters to JSON
+//+ typename KHash_t; a cheap type that is hashable and identifies the performance sensitive parameters of the kernel,
+/// such as dimensions
+//+ KHash_t khash() const; get the hash of the kernel parameters. Note that khash use make sure that the hash preserves
+/// the divisibility properties
+//+ std::vector<std::pair<Dtype, void*>> get_args() const;
+//+ static KHash_t deserialize(const json &);  // Deserialize the hash from JSON static json
+//+ serialize(KHash_t) const;  // Serialize the kernel parameters to JSON
 
 /// The "raw" arguments to the kernel, which only contains data, such as dimension bounds
 /// and pointers to data.
-using KArg_t = std::vector<std::pair<Dtype, void*>>;  // (dtype, pointer to data)
-
-
+using KArg_t = std::vector<std::pair<Dtype, void *>>;  // (dtype, pointer to data)
 
 /// Think of this class like the equivalent of a cuda kernel
 /// except triton kernels do not have "threads"
 template <typename KernelArgs_t>
 class TritonKernel {
-protected:
+   protected:
     std::string ptx;
 
     int shared;
@@ -202,30 +197,32 @@ protected:
 
     std::string kernel_name;
     std::vector<std::pair<std::string, Dtype>> args;  // (name, dtype)
+    // some arguments and integer dimensions are divisible by 16, triton distinguishes these cases
+    // as it can generate more efficient code for them
     std::vector<int> divisible_by_16;
 
     CUmodule mod;
     CUfunction func;
 
-public:
+   public:
     using KernelArgs = KernelArgs_t;
     using super_t = TritonKernel<KernelArgs>;
 
     TritonKernel(const std::string &ptx, int shared, int global_scratch_size, int num_warps,
-            const std::string &kernel_name,
-            const std::vector<std::pair<std::string, Dtype>> &args,
-            const std::vector<int> &divisible_by_16) 
-    : ptx(ptx), shared(shared), global_scratch_size(global_scratch_size), num_warps(num_warps),
-        kernel_name(kernel_name),
-        args(args), divisible_by_16(divisible_by_16)
-    {
+                 const std::string &kernel_name, const std::vector<std::pair<std::string, Dtype>> &args,
+                 const std::vector<int> &divisible_by_16)
+        : ptx(ptx),
+          shared(shared),
+          global_scratch_size(global_scratch_size),
+          num_warps(num_warps),
+          kernel_name(kernel_name),
+          args(args),
+          divisible_by_16(divisible_by_16) {
         CHECK_CU_CALL(cuModuleLoadDataEx(&mod, ptx.data(), 0, nullptr, nullptr));
         CHECK_CU_CALL(cuModuleGetFunction(&func, mod, kernel_name.c_str()));
     }
-    
+
     TritonKernel(const json &config) {
-        // std::vector<std::pair<std::string, Dtype>> args;
-        // std::vector<int> divisible_by_16;
         for (const auto &arg : config["args"]) {
             std::string name = arg["name"];
             Dtype dtype = Dtype::from_string(arg["dtype"]);
@@ -243,10 +240,9 @@ public:
         CHECK_CU_CALL(cuModuleGetFunction(&func, mod, kernel_name.c_str()));
     }
 
-
     ~TritonKernel() {
-        // we don't check for errors here, because this class is usually part of a global state whose destructor is called at the end
-        // which may be after the pytorch cuda context is destroyed
+        // we don't check for errors here, because this class is usually part of a global state whose destructor is
+        // called at the end which may be after the pytorch cuda context is destroyed
         cuModuleUnload(mod);
     }
 
@@ -254,22 +250,20 @@ public:
         auto args = kargs.get_args();
         if (args.size() != this->args.size()) {
             throw std::runtime_error("Argument size mismatch: expected " + std::to_string(this->args.size()) +
-                                    ", got " + std::to_string(args.size()));
+                                     ", got " + std::to_string(args.size()));
         }
-        std::vector<void*> arg_ptrs;
+        std::vector<void *> arg_ptrs;
         arg_ptrs.reserve(args.size() + 1);
         for (auto i : divisible_by_16) {
-            if (!(i < (int) args.size() && is_div_16(args[i]))) {
-                throw std::runtime_error("Argument at index " + std::to_string(i) +
-                " must be divisible by 16");
+            if (!(i < (int)args.size() && is_div_16(args[i]))) {
+                throw std::runtime_error("Argument at index " + std::to_string(i) + " must be divisible by 16");
             }
         }
         int i = 0;
         for (auto &[dtype, data] : args) {
             if (dtype != this->args[i].second) {
-                throw std::runtime_error("Argument type mismatch at index " + std::to_string(i) +
-                                        ": expected " + this->args[i].second.to_string() +
-                                        ", got " + dtype.to_string());
+                throw std::runtime_error("Argument type mismatch at index " + std::to_string(i) + ": expected " +
+                                         this->args[i].second.to_string() + ", got " + dtype.to_string());
             }
             if (dtype.is_ptr) {
                 arg_ptrs.push_back(&data);
@@ -279,26 +273,21 @@ public:
             i += 1;
         }
         assert(global_scratch_size == 0 && "global_scratch_size must be 0 for now");
-        CUdeviceptr global_scratch = 0;  // Not used, placeholder
+        CUdeviceptr global_scratch = 0;       // Not used, placeholder
         arg_ptrs.push_back(&global_scratch);  // Placeholder for global scratch, not used currently
 
         auto [gx, gy, gz] = blocks(kargs);
 
-        CHECK_CU_CALL(cuLaunchKernel(
-            func, 
-            gx, gy, gz,
-            num_warps * 32, 1, 1,
-            shared, stream, arg_ptrs.data(), nullptr));
+        CHECK_CU_CALL(cuLaunchKernel(func, gx, gy, gz, num_warps * 32, 1, 1, shared, stream, arg_ptrs.data(), nullptr));
     }
-
 
     bool can_run(KernelArgs &kargs) const {
         auto args = kargs.get_args();
         if (args.size() != this->args.size()) {
-            return false; 
+            return false;
         }
         for (auto i : divisible_by_16) {
-            if (!(i < (int) args.size() && is_div_16(args[i]))) {
+            if (!(i < (int)args.size() && is_div_16(args[i]))) {
                 return false;  // Argument at index i must be divisible by 16
             }
         }
@@ -321,29 +310,30 @@ public:
         oss << "shared: " << shared << ", "
             << "global_scratch_size: " << global_scratch_size << ", "
             << "num_warps: " << num_warps << ", "
-            << "kernel_name: " << kernel_name
-            << "}";
+            << "kernel_name: " << kernel_name << "}";
         return oss.str();
     }
 
     virtual std::tuple<int, int, int> blocks(const KernelArgs &args) const = 0;
 };
 
+// This class implements autotuning on a collection of Triton kernels
 template <typename KernelT>
 class TritonAotKernels {
-public:
+   public:
     using KernelArgs = typename KernelT::KernelArgs;
     using KHash_t = typename KernelArgs::KHash_t;
-private:
+
+   private:
     std::vector<std::unique_ptr<KernelT>> kernels;
-    
 
     using KHash_t_ = std::tuple<KHash_t, int>;  // (khash, sm_version)
     std::map<KHash_t_, int> kernel_map;
     std::map<KHash_t_, std::vector<double>> kernel_times;
     std::map<KHash_t_, std::vector<int>> kernel_indices;
     int sm;
-public:
+
+   public:
     json dump_kernel_map() const {
         json res;
         for (const auto &[khash, index] : kernel_map) {
@@ -359,7 +349,7 @@ public:
         return res;
     }
 
-    void load_kernel_map(const json& kmap) {
+    void load_kernel_map(const json &kmap) {
         for (const auto &value : kmap) {
             KHash_t khash = KernelArgs::deserialize(value["khash"]);
             int index = value["index"];
@@ -373,7 +363,7 @@ public:
             }
         }
     }
-    
+
     TritonAotKernels(const json &kernel_meta) {
         sm = get_cur_sm_version();
         unsigned int num_skipped = 0;
@@ -389,7 +379,7 @@ public:
         }
         if (num_skipped > 0) {
             std::cerr << "Warning: " << num_skipped << " kernels were skipped due to SM version mismatch." << std::endl;
-        } 
+        }
         if (kernels.size() == num_skipped) {
             throw std::runtime_error("No kernels available for the current SM version: " + std::to_string(sm));
         }
@@ -406,9 +396,7 @@ public:
             std::vector<double> times;
             for (size_t i = 0; i < kernels.size(); ++i) {
                 if (kernels[i] != nullptr && kernels[i]->can_run(args)) {
-                    double time = benchmark(
-                        [&]() { kernels[i]->run(args, stream); },
-                        stream);
+                    double time = benchmark([&]() { kernels[i]->run(args, stream); }, stream);
                     kidx.push_back(i);
                     times.push_back(time);
 
@@ -420,8 +408,7 @@ public:
             }
             if (best_kernel_index == -1) {
                 std::ostringstream oss;
-                oss << "No suitable kernel found for parameters: "
-                    << KernelArgs::serialize(khash)
+                oss << "No suitable kernel found for parameters: " << KernelArgs::serialize(khash)
                     << ", SM version: " << sm << std::endl;
                 throw std::runtime_error(oss.str());
             }
@@ -439,4 +426,4 @@ public:
         }
     }
 };
-
+#endif  // PLATFORM_CPU

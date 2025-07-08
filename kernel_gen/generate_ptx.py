@@ -70,6 +70,7 @@ def get_sig(key: dict):
     sig['implicit_gemm_idx_sort_kernel'] = {
         'indices': f'*i32',
         'line_mask': f'*i32' if K3 <= 32 else '*i64',
+        'NReal': 'i32',
         'N': 'i32',
         'N_stride': 'i32',
         'K3': 'i32',
@@ -79,6 +80,7 @@ def get_sig(key: dict):
     sig['implicit_gemm_mask_kernel'] = {
         'indices': f'*i32',
         'mask': '*i1',
+        'NReal': 'i32',
         'N': 'i32',
         'N_stride': 'i32',
         'K3': 'i32',

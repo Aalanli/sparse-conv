@@ -1,7 +1,9 @@
+#ifndef PLATFORM_CPU
 #include "conv3d_implicit_gemm_T.h"
-#include "triton_aot_utils.h"
+
 #include <fstream>
-#include <mutex>
+
+#include "triton_aot_utils.h"
 
 int quant_N(int N) {
     std::vector<int> thresholds = {1000, 10000, 100000, 600000};
@@ -11,23 +13,6 @@ int quant_N(int N) {
         }
     }
     return thresholds.back();
-}
-
-
-void set_zero(void* ptr, Dtype dtype, int size, CUstream stream) {
-    if (dtype.type == Dtype::FP16) {
-        cuMemsetD16Async((CUdeviceptr) ptr, 0, size, stream);
-    } else if (dtype.type == Dtype::FP32) {
-        cuMemsetD32Async((CUdeviceptr) ptr, 0, size, stream);
-    } else if (dtype.type == Dtype::INT32) {
-        cuMemsetD32Async((CUdeviceptr) ptr, 0, size, stream);
-    } else if (dtype.type == Dtype::INT64) {
-        cuMemsetD32Async((CUdeviceptr) ptr, 0, size * 2, stream);
-    } else if (dtype.type == Dtype::BOOL) {
-        cuMemsetD8Async((CUdeviceptr) ptr, 0, size, stream);
-    } else {
-        throw std::runtime_error("Unsupported dtype for set_zero: " + dtype.to_string());
-    }
 }
 
 extern "C" {
@@ -50,17 +35,22 @@ void setup_kernels() {
     }
     std::cerr << "Setting up implicit gemm kernels..." << std::endl;
     std::string meta_json(reinterpret_cast<const char *>(_binary_meta_json_start),
-                            _binary_meta_json_end - _binary_meta_json_start);
+                          _binary_meta_json_end - _binary_meta_json_start);
     json meta = json::parse(meta_json);
-    // implicit_gemm_kernels = std::make_unique<TritonAotKernels<ImplicitGemmConv3dKernelTArgs>>(meta["conv3d_implicit_gemm"]);
-    implicit_gemm_kernels = std::make_unique<TritonAotKernels<ImplicitGemmConv3dKernelT>>(meta["implicit_conv3d_kernel_T"]);
-    implicit_sort_kernels = std::make_unique<TritonAotKernels<ImplicitGemmSortKernel>>(meta["implicit_gemm_idx_sort_kernel"]);
-    implicit_gemm_mask_kernels = std::make_unique<TritonAotKernels<ImplicitGemmMaskKernel>>(meta["implicit_gemm_mask_kernel"]);
-    implicit_gemm_df_kernels = std::make_unique<TritonAotKernels<ImplicitGemmConv3dDFKernel>>(meta["implicit_gemm_dF_kernel"]);
-    implicit_gemm_dw_kernels = std::make_unique<TritonAotKernels<ImplicitGemmConv3dDWKernel>>(meta["implicit_gemm_dW_kernel"]);
+
+    implicit_gemm_kernels =
+        std::make_unique<TritonAotKernels<ImplicitGemmConv3dKernelT>>(meta["implicit_conv3d_kernel_T"]);
+    implicit_sort_kernels =
+        std::make_unique<TritonAotKernels<ImplicitGemmSortKernel>>(meta["implicit_gemm_idx_sort_kernel"]);
+    implicit_gemm_mask_kernels =
+        std::make_unique<TritonAotKernels<ImplicitGemmMaskKernel>>(meta["implicit_gemm_mask_kernel"]);
+    implicit_gemm_df_kernels =
+        std::make_unique<TritonAotKernels<ImplicitGemmConv3dDFKernel>>(meta["implicit_gemm_dF_kernel"]);
+    implicit_gemm_dw_kernels =
+        std::make_unique<TritonAotKernels<ImplicitGemmConv3dDWKernel>>(meta["implicit_gemm_dW_kernel"]);
 
     std::string kernel_map_json(reinterpret_cast<const char *>(_binary_kernel_map_json_start),
-                                    _binary_kernel_map_json_end - _binary_kernel_map_json_start);
+                                _binary_kernel_map_json_end - _binary_kernel_map_json_start);
     json kernel_map = json::parse(kernel_map_json);
     if (kernel_map.contains("implicit_conv3d_kernel_T")) {
         implicit_gemm_kernels.lock().get()->load_kernel_map(kernel_map["implicit_conv3d_kernel_T"]);
@@ -118,4 +108,4 @@ void save_kernel_map(std::string kernel_map_file) {
     file << kmap.dump(-1);
     file.close();
 }
-
+#endif  // PLATFORM_CPU

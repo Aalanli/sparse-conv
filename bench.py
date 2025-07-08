@@ -81,7 +81,7 @@ class Conv3DSubmAot(ImplBase):
 
     def __init__(self, in_channels, out_channels, kernel_size=3):
         self.weight = torch.nn.Parameter(
-            torch.randn(kernel_size**3, in_channels, out_channels, device='cuda', dtype=torch.float16)
+            torch.randn(kernel_size**3, in_channels, out_channels, device='cuda', dtype=torch.float32)
         )
         self.kernel_size = kernel_size
 
@@ -114,7 +114,7 @@ class Conv3dTransposed(ImplBase):
 
 class Conv3dTransposedAOT(ImplBase):
     name = 'conv3d_transposed_aot'
-    def __init__(self, in_channels, out_channels, kernel_size=3, weight_dtype=torch.float16):
+    def __init__(self, in_channels, out_channels, kernel_size=3, weight_dtype=torch.float32):
         self.weight = torch.nn.Parameter(
             torch.randn(kernel_size**3, in_channels, out_channels, device='cuda', dtype=weight_dtype)
         )

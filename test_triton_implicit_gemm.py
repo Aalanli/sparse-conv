@@ -184,6 +184,7 @@ def test_triton_jit_kernels_conv3d_subm(coords, dim_in, dim_out, kernel_size):
         print(out_triton_T[0])
         print(indices_T[:, 0])
 
+
 def test():
     idx = get_voxel_coords(100, device='cuda')
 
@@ -213,5 +214,41 @@ def test():
     # test_backwards(idx, 32, 32, 5)
     # test_backwards(idx, 64, 64, 5)
 
-test()
+def test_conv3d_implicit_gemm_real_voxels(N, dim_in, dim_out, kernel_size, dtype_weight_dtype, acc_dtype, sorted):
+    torch.manual_seed(0)
+    dtype, weight_dtype = dtype_weight_dtype
+    if acc_dtype == "fp16" and dtype == torch.float32:
+        return
+
+    coords = get_voxel_coords(N, device="cuda")
+    feats = torch.randn(coords.shape[0], dim_in, device="cuda", dtype=dtype)
+    weights = torch.randn(kernel_size**3, dim_in, dim_out, device="cuda", dtype=weight_dtype) / dim_in**0.5
+    indices_subm = ops.idx_gen.gen_conv3d_subm_indices_v2(coords, kernel_size)
+
+    out1 =  aot_implicit_gemm.conv3d_implicit_gemm(
+        feats, indices_subm, weights, kernel_size, acc_dtype=acc_dtype, sorted=sorted
+    )
+    out2 = reference_conv3d_subm(feats, indices_subm.T.contiguous(), weights.to(feats.dtype), kernel_size).to(out1.dtype)
+
+    print("max output mismatch:", (out1 - out2).abs().max())
+
+    spatial_range = (coords.max(dim=0).values + 1).tolist()
+    coords, indices_conv = ops.idx_gen.gen_conv3d_indices_v2(coords, spatial_range, kernel_size, stride=2, padding=1)
+
+    out0 = conv3d_implicit_gemm_T(feats, indices_conv, weights, kernel_size)
+    out1 =  aot_implicit_gemm.conv3d_implicit_gemm(
+        feats, indices_conv, weights, kernel_size, acc_dtype=acc_dtype, sorted=sorted
+    )
+
+    out2 = reference_conv3d_subm(feats, indices_conv.T.contiguous(), weights.to(feats.dtype), kernel_size).to(out1.dtype)
+
+    print("max output mismatch:", (out0 - out2).abs().max())
+    print("max output mismatch:", (out1 - out2).abs().max())
+    return out1, out2, indices_conv
+
+
+# test()
+test_conv3d_implicit_gemm_real_voxels(
+    1000000, 16, 32, 3, (torch.float16, torch.float16), "fp32", True
+)
 
