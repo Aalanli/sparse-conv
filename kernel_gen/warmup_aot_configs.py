@@ -16,17 +16,26 @@ import ops.conv3d_implicit_gemm
 from utils import get_voxel_coords
 
 def run(coords, N, dim_in, dim_out, kernel_size, dtype, weight_dtype, acc_dtype):
-    feats = torch.randn(N, dim_in, device="cuda", dtype=dtype, requires_grad=True)
-    weights = torch.randn(kernel_size ** 3, dim_in, dim_out, device="cuda", dtype=weight_dtype, requires_grad=True)
-    indices = ops.idx_gen.gen_conv3d_subm_indices(coords, kernel_size)
-    out = ops.conv3d_implicit_gemm.conv3d_implicit_gemm(feats, indices, weights, kernel_size, acc_dtype=acc_dtype)
-    out.sum().backward()
+    try:
+        feats = torch.randn(N, dim_in, device="cuda", dtype=dtype, requires_grad=True)
+        weights = torch.randn(kernel_size ** 3, dim_in, dim_out, device="cuda", dtype=weight_dtype, requires_grad=True)
+        indices = ops.idx_gen.gen_conv3d_subm_indices(coords, kernel_size)
+        out = ops.conv3d_implicit_gemm.conv3d_implicit_gemm(feats, indices, weights, kernel_size, acc_dtype=acc_dtype)
+        out.sum().backward()
+        feats.grad = None
+        weights.grad = None
+        out = ops.conv3d_implicit_gemm.conv3d_implicit_gemm(feats, indices, weights, kernel_size, acc_dtype=acc_dtype, sorted=True)
+        out.sum().backward()
+        torch.cuda.synchronize()
+    except Exception as e:
+        print(f"Failed to run for {coords.shape[0]}, {N}, {dim_in}, {dim_out}, {kernel_size}, {dtype}, {weight_dtype}, {acc_dtype}")
+        raise e
     return out
 
 
 def warmup_full():
     coords = get_voxel_coords(800_000, device="cuda")
-    SEQS = [1000, 10000, 100_000, 600_000]
+    SEQS = [1000, 10000, 100_000, 600_000] + [1001, 10001, 100_001, 600_001]
     # run(coords[:300], 300, 16, 16, 3, torch.float32, "fp32")
 
     configs = (
@@ -59,3 +68,6 @@ def warmup_toy():
     ops.conv3d_implicit_gemm.save_kernel_map()
 
 warmup_full()
+# coords = get_voxel_coords(800_000, device="cuda")
+# out = run(coords[:10000], 1000, 256, 256, 3, torch.float32, torch.float32, "fp32")
+# torch.cuda.synchronize()

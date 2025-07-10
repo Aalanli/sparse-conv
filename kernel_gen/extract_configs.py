@@ -91,7 +91,7 @@ def get_sm():
         raise RuntimeError("CUDA is not available. Cannot determine SM version.")
 
 def extract_full_configs(key_vals: list):
-    Ns = [1000, 10000, 100000, 600000]
+    Ns = [1000, 1001, 10000, 10001, 100000, 100001, 600000, 600001]
     dtypes = [
             (torch.float32, tl.float32, torch.float32),
             (torch.float16, tl.float32, torch.float16),
@@ -99,7 +99,7 @@ def extract_full_configs(key_vals: list):
         ]
     BLOCK_Ns = [32]
     dims = [
-        (16, 16), (32, 32), (64, 64), (64, 128), (128, 128), (256, 256)
+        (16, 16), (16, 32), (32, 32), (32, 64), (64, 64), (64, 128), (128, 128), (256, 256)
     ]
     kernel_sizes = [3]
     params = list(itertools.product(Ns, dtypes, BLOCK_Ns, dims, kernel_sizes))
@@ -122,12 +122,29 @@ if __name__ == "__main__":
     sm = get_sm()
     key_vals = []
 
-    # extract_test_configs(key_vals)
-    extract_full_configs(key_vals)
-
     parser = argparse.ArgumentParser(description="Dump extracted configs to a file.")
     parser.add_argument("--out", type=str, required=True, help="Output JSON file name")
     args = parser.parse_args()
+
+    # Check if the output path is valid and writable
+    output_dir = os.path.dirname(args.out)
+    if output_dir and not os.path.exists(output_dir):
+        try:
+            os.makedirs(output_dir, exist_ok=True)
+        except OSError as e:
+            print(f"Error: Cannot create output directory '{output_dir}': {e}")
+            sys.exit(1)
+    
+    # Test if we can write to the file
+    try:
+        with open(args.out, "w") as f:
+            pass
+    except (OSError, IOError) as e:
+        print(f"Error: Cannot write to output file '{args.out}': {e}")
+        sys.exit(1)
+
+    # extract_test_configs(key_vals)
+    extract_full_configs(key_vals)
     
     for kv in key_vals:
         kv['sm'] = sm
@@ -135,7 +152,6 @@ if __name__ == "__main__":
     with open(args.out, "w") as f:
         json.dump(
             key_vals,
-            f,
-            indent=2
+            f
         )
 

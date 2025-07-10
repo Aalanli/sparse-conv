@@ -19,9 +19,9 @@
             const char *err, *str;                                                                             \
             cuGetErrorName(_e, &err);                                                                          \
             cuGetErrorString(_e, &str);                                                                        \
-            std::cerr << "CUDA driver Error: " << err << " - " << str << " at " << __FILE__ << ":" << __LINE__ \
-                      << std::endl;                                                                            \
-            std::exit(EXIT_FAILURE);                                                                           \
+            std::ostringstream oss;                                                                             \
+            oss << "CUDA driver Error: " << err << " - " << str << " at " << __FILE__ << ":" << __LINE__;      \
+            throw std::runtime_error(oss.str());                                                                \
         }                                                                                                      \
     } while (0)
 
@@ -30,9 +30,10 @@
     do {                                                                                                     \
         cudaError_t _e = call;                                                                               \
         if (_e != cudaSuccess) {                                                                             \
-            std::cerr << "CUDA Error: " << cudaGetErrorName(_e) << " - " << cudaGetErrorString(_e) << " at " \
-                      << __FILE__ << ":" << __LINE__ << std::endl;                                           \
-            std::exit(EXIT_FAILURE);                                                                         \
+            std::ostringstream oss;                                                                           \
+            oss << "CUDA Error: " << cudaGetErrorName(_e) << " - " << cudaGetErrorString(_e) << " at " \
+                << __FILE__ << ":" << __LINE__;                                                              \
+            throw std::runtime_error(oss.str());                                                              \
         }                                                                                                    \
     } while (0)
 
