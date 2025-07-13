@@ -1,5 +1,16 @@
 # sparse-conv
 
+Sparse-conv is a minimal 3D sparse convolution library that leverages triton kernel generation to match or exceed the performance of publicly available libraries like spconv or torchsparse.
+
+Sparse convolution proceeds by 2 steps:
+1. Generate indices
+- This is implemented via a GPU hashmap in CUDA
+2. Implicit Gemm
+- This is a fused matrix multiplication implemented in Triton.
+
+Sparse-conv uses triton to ahead-of-time compile implicit gemm kernels, embeds the PTX directly into the binary, and thus is suitable for onboard inference where JIT is unacceptable.
+
+
 ## Building the library:
 ```
 pip install -r requirements.txt
