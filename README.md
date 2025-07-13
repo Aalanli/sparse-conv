@@ -8,7 +8,12 @@ Sparse convolution proceeds by 2 steps:
 2. Implicit Gemm
 - This is a fused matrix multiplication implemented in Triton.
 
-Sparse-conv uses triton to ahead-of-time compile implicit gemm kernels, embeds the PTX directly into the binary, and thus is suitable for onboard inference where JIT is unacceptable.
+Sparse-conv uses triton to ahead-of-time compile implicit gemm kernels, embeds the PTX directly into the binary, and thus is suitable for onboard inference where JIT is unacceptable. 
+
+## Benchmarks
+![Forwards Performance](https://github.com/Aalanli/sparse-conv/blob/main/benchmarks/perf-sparse-conv.png)
+![Backwards Performance](https://github.com/Aalanli/sparse-conv/blob/main/benchmarks/perf-sparse-conv-backwards.png)
+
 
 
 ## Building the library:
